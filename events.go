@@ -1,6 +1,7 @@
 package gonode
 
 func (this *GoNode) OnConn(id string) {
+	this.logger.Info(this.sprinfLog("conn to " + id + " succeed!"))
 	this.behavior.OnConn(id)
 }
 

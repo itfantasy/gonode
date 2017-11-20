@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -34,6 +35,16 @@ func (conf *Conf) Get(section string, name string) string {
 		return ""
 	}
 	return val
+}
+
+func (conf *Conf) GetInt(section string, name string, defVal int) int {
+	strVal := conf.Get(section, name)
+	intVal, err := strconv.Atoi(strVal)
+	if err != nil {
+		return defVal
+	} else {
+		return intVal
+	}
 }
 
 func (conf *Conf) loadVals() (map[string]map[string]string, error) {

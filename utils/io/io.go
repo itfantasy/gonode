@@ -1,7 +1,6 @@
 package io
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,9 +10,7 @@ import (
 
 func CurDir() string {
 	file, _ := exec.LookPath(os.Args[0])
-	fmt.Println("file:", file)
 	path, _ := filepath.Abs(file)
-	fmt.Println("path:", path)
 	splitstring := strings.Split(path, "\\")
 	size := len(splitstring)
 	splitstring = strings.Split(path, splitstring[size-1])

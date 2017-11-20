@@ -45,14 +45,21 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	// init the logger
 	this.logger = new(logger.Logger)
 	// get the node self info config
-	this.info = this.behavior.SelfNodeInfo()
+	this.behavior = behavior
+	info, err := this.behavior.SelfNodeInfo()
+	if err != nil {
+		this.logger.Error(this.sprinfLog("get the node self info err!" + err.Error()))
+		return
+	}
+	this.info = info
 	// init the core redis
 	this.coreRedis = new(redis.Redis)
-	if err := this.coreRedis.Conn(this.info.RedCore,
+	if err := this.coreRedis.Conn(this.info.RedUrl,
 		this.info.RedDB,
 		this.info.RedPool,
 		this.info.RedAuth); err != nil {
 		this.logger.Error(this.sprinfLog("cannot connect to the core redis!!"))
+		return
 	}
 	// sub the redis channel
 	this.coreRedis.Subscribe(GONODE_PUB_CHAN)
@@ -68,7 +75,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 
 	// check if auto detect
 	if this.info.AutoDetect {
-		this.autoDetect()
+		go this.autoDetect()
 	}
 
 	this.behavior.Start()
@@ -77,6 +84,8 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		timer.Sleep(1)
 		this.behavior.Update()
 	}
+
+	this.logger.Error("shuting down!!!")
 }
 
 func (this *GoNode) initNetWorker() {
@@ -148,7 +157,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	} else {
 		exist := this.netWorker.IsIdExists(info.Id)
 		if exist {
-			this.logger.Info(this.sprinfLog("there is a same id in local record:" + url + "/" + info.Id))
+			this.logger.Info(this.sprinfLog("there is a same id in local record:" + url + "|" + info.Id))
 			return "", false
 		}
 		return info.Id, true
@@ -156,9 +165,9 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 }
 
 func (this *GoNode) autoDetect() {
-	this.logger.Info("auto detecting other nodes..")
 	for {
 		timer.Sleep(5000)
+		this.logger.Info("auto detecting other nodes..")
 		// get all node infos from the coreRedis and compare with the local record
 		ids, err := this.coreRedis.SMembers(GONODE_INFO)
 		if err != nil {
@@ -166,7 +175,9 @@ func (this *GoNode) autoDetect() {
 			continue
 		}
 		for _, id := range ids {
-			this.checkNewNode(id)
+			if id != this.info.Id {
+				this.checkNewNode(id)
+			}
 		}
 	}
 }
@@ -201,17 +212,16 @@ func (this *GoNode) getNodeUrlById(id string) (string, error) {
 }
 
 func (this *GoNode) registerSelf() {
-	info := this.behavior.SelfNodeInfo()
-	infoStr, err := json.Encode(info)
+	infoStr, err := json.Encode(this.info)
 	if err != nil {
 		this.logger.Error(this.sprinfLog(err.Error()))
 	}
 
-	this.coreRedis.Set("gonode_"+info.Id, info.Url)
-	this.coreRedis.Set(info.Url, string(infoStr))
-	this.coreRedis.SAdd(GONODE_INFO, info.Id)
+	this.coreRedis.Set("gonode_"+this.info.Id, this.info.Url)
+	this.coreRedis.Set(this.info.Url, string(infoStr))
+	this.coreRedis.SAdd(GONODE_INFO, this.info.Id)
 
-	msg := cmd.NewNode(info.Id)
+	msg := cmd.NewNode(this.info.Id)
 	this.PublishMsg(msg)
 
 	this.logger.Info(this.sprinfLog("report the node info:" + msg))

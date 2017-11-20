@@ -1,15 +1,15 @@
 package gen_server
 
 type GenServer interface {
-	SelfNodeInfo() *NodeInfo    // 自身节点信息（别名的自纠正，用于网关，自动负载均衡）
-	IsInterestedIn(string) bool // 是否对新节点感兴趣
+	SelfNodeInfo() (*NodeInfo, error) // the node self information
+	IsInterestedIn(string) bool       // is interested in the id
 
-	Start()                 // 初始化完毕时
-	Update()                // 轮询更新时
-	OnConn(string)          // 获得新链接时
-	OnMsg(string, []byte)   // 有新消息时
-	OnClose(string)         // 链接断开时
-	OnShell(string, string) // 有来自redis的订阅消息时
-	OnReload(string) error  // 重新加载业务逻辑时
-	CreateConnId() string   // 外来客户端随机id
+	Start()                 // when start
+	Update()                // timer update
+	OnConn(string)          // get a new conn
+	OnMsg(string, []byte)   // receive a new msg
+	OnClose(string)         // a conn disconnected
+	OnShell(string, string) // receive a pub/sub msg from redis
+	OnReload(string) error  // reload the bll
+	CreateConnId() string   // create a random conn id when the node is wan
 }

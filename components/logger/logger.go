@@ -1,5 +1,9 @@
 package logger
 
+import (
+	"fmt"
+)
+
 type Logger struct {
 	level       Enum_LogLevels
 	netReporter INetReporter
@@ -34,12 +38,14 @@ func (this *Logger) Log(level Enum_LogLevels, msg string) {
 	if this.level > level {
 		return
 	}
-	// 调用IO写入文件
+	txt := this.levelToString(level) + msg
+	fmt.Println(txt)
+	// call io to write log file
 	//....
 
 	if this.netReporter != nil {
-		// 调用接口上报日志
-		this.netReporter.ReportLog(this.levelToString(level) + msg)
+		// call the interface to report the net log
+		this.netReporter.ReportLog(txt)
 	}
 }
 
