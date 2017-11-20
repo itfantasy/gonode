@@ -67,7 +67,10 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 
 	if this.info.Net != "" {
 		// init the networker
-		this.initNetWorker()
+		if err := this.initNetWorker(); err != nil {
+			this.logger.Error(this.sprinfLog(err.Error()))
+			return
+		}
 		// register self info to core redis
 		this.registerSelf()
 		go this.netWorker.Listen(this.info.Url)
@@ -88,14 +91,14 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.logger.Error("shuting down!!!")
 }
 
-func (this *GoNode) initNetWorker() {
+func (this *GoNode) initNetWorker() error {
 	url := this.info.Url
 	infos := strings.Split(url, "://") // get the header of protocol
 	switch infos[0] {
 	case (string)(nets.WS):
 		this.netWorker = new(ws.WSNetWorker)
 	}
-	this.netWorker.BindEventListener(this)
+	return this.netWorker.BindEventListener(this)
 }
 
 // -------------- redis pub/sub ------------------
@@ -129,8 +132,12 @@ func (this *GoNode) handleSubscribe() {
 
 // -------------- net ------------------
 
-func (node *GoNode) getNodeInfo(url string) (*gen_server.NodeInfo, error) {
-	infoStr, err := node.coreRedis.Get(url)
+func (this *GoNode) NetWorker() nets.INetWorker {
+	return this.netWorker
+}
+
+func (this *GoNode) getNodeInfo(url string) (*gen_server.NodeInfo, error) {
+	infoStr, err := this.coreRedis.Get(url)
 	if err != nil {
 		return nil, err
 	}

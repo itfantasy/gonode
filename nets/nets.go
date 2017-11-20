@@ -5,9 +5,10 @@ type INetWorker interface {
 	Connect(url string, origin string) error
 	Send(id string, msg []byte) error
 	SendAsync(id string, msg []byte)
-	BindEventListener(eventListener INetEventListener)
+	BindEventListener(eventListener INetEventListener) error
 	IsIdExists(string) bool
 	GetAllConnIds() []string
+	Close(string) error
 }
 
 type Enum_NetWorkerType string

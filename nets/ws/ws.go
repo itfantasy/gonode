@@ -89,6 +89,7 @@ func (this *WSNetWorker) onClose(conn *websocket.Conn) {
 	if exists {
 		this.eventListener.OnClose(id)
 		this.removeConnInfo(id) // remove the closed conn from local record
+		conn.Close()
 	}
 }
 
@@ -100,6 +101,20 @@ func (this *WSNetWorker) onError(conn *websocket.Conn, err error) {
 	}
 }
 
-func (this *WSNetWorker) BindEventListener(eventListener nets.INetEventListener) {
-	this.eventListener = eventListener
+func (this *WSNetWorker) BindEventListener(eventListener nets.INetEventListener) error {
+	if this.eventListener == nil {
+		this.eventListener = eventListener
+		return nil
+	}
+	return errors.New("this net worker has binded an event listener!!")
+}
+
+func (this *WSNetWorker) Close(id string) error {
+	conn, exists := this.getInfoConnById(id)
+	if exists {
+		this.eventListener.OnClose(id)
+		this.removeConnInfo(id) // remove the closed conn from local record
+		return conn.Close()
+	}
+	return errors.New("there is not the id in local record!")
 }
