@@ -34,6 +34,6 @@ func (this *GnBuffer) PushString(value string) error {
 	return binary.Write(this.bytesBuffer, binary.BigEndian, buffer)
 }
 
-func (this *GnBuffer) Flush() []byte {
+func (this *GnBuffer) Bytes() []byte {
 	return this.bytesBuffer.Bytes() // has been a slic
 }
