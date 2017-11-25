@@ -10,12 +10,15 @@ type GnBuffer struct {
 	bytesBuffer *bytes.Buffer
 }
 
-func BuildBuffer(capacity int) *GnBuffer {
+func BuildBuffer(capacity int) (*GnBuffer, error) {
+	if capacity > 10240 {
+		return nil, errors.New("illegal length for the buffer!!")
+	}
 	buffer := new(GnBuffer)
 	buffer.buffer = make([]byte, capacity)
 	buffer.bytesBuffer = bytes.NewBuffer(buffer.buffer)
 	buffer.bytesBuffer.Reset()
-	return buffer
+	return buffer, nil
 }
 
 func (this *GnBuffer) PushInt(value int32) error {

@@ -3,6 +3,7 @@ package gnbuffers
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 )
 
 type GnParser struct {
@@ -40,6 +41,9 @@ func (this *GnParser) String() (string, error) {
 	length, err := this.Int() // get the string len
 	if err != nil {
 		return "", err
+	}
+	if length > 10240 {
+		return "", errors.New("illegal length for a string!!")
 	}
 	var tempBuffer []byte = make([]byte, length)
 	if binary.Read(this.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
