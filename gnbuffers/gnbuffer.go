@@ -19,11 +19,11 @@ func BuildBuffer(capacity int) *GnBuffer {
 }
 
 func (this *GnBuffer) PushInt(value int32) error {
-	return binary.Write(this.bytesBuffer, binary.BigEndian, value)
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
 
 func (this *GnBuffer) PushLong(value int64) error {
-	return binary.Write(this.bytesBuffer, binary.BigEndian, value)
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
 
 func (this *GnBuffer) PushString(value string) error {
@@ -31,7 +31,7 @@ func (this *GnBuffer) PushString(value string) error {
 	if err := this.PushInt(int32(len(buffer))); err != nil { // write the len of the string
 		return err
 	}
-	return binary.Write(this.bytesBuffer, binary.BigEndian, buffer)
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, buffer)
 }
 
 func (this *GnBuffer) Bytes() []byte {

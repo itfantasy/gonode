@@ -7,22 +7,20 @@ import (
 
 type GnParser struct {
 	buffer      []byte
-	offset      int
 	bytesBuffer *bytes.Buffer
 }
 
 func BuildParser(buffer []byte, offset int) *GnParser {
 	parser := new(GnParser)
 	parser.buffer = buffer
-	parser.offset = offset
 	parser.bytesBuffer = bytes.NewBuffer(parser.buffer)
-	parser.bytesBuffer.Grow(parser.offset)
+	parser.bytesBuffer.Grow(offset)
 	return parser
 }
 
 func (this *GnParser) Int() (int32, error) {
 	var ret int32
-	err := binary.Read(this.bytesBuffer, binary.BigEndian, &ret)
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
@@ -31,7 +29,7 @@ func (this *GnParser) Int() (int32, error) {
 
 func (this *GnParser) Long() (int64, error) {
 	var ret int64
-	err := binary.Read(this.bytesBuffer, binary.BigEndian, &ret)
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
@@ -44,7 +42,7 @@ func (this *GnParser) String() (string, error) {
 		return "", err
 	}
 	var tempBuffer []byte = make([]byte, length)
-	if binary.Read(this.bytesBuffer, binary.BigEndian, &tempBuffer); err != nil {
+	if binary.Read(this.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
 		return "", err
 	}
 	return string(tempBuffer), nil
