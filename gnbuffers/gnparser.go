@@ -19,6 +19,24 @@ func BuildParser(buffer []byte, offset int) *GnParser {
 	return parser
 }
 
+func (this *GnParser) Byte() (byte, error) {
+	var ret byte
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	if err != nil {
+		return 0, err
+	}
+	return ret, nil
+}
+
+func (this *GnParser) Short() (int16, error) {
+	var ret int16
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	if err != nil {
+		return 0, err
+	}
+	return ret, nil
+}
+
 func (this *GnParser) Int() (int32, error) {
 	var ret int32
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
@@ -50,5 +68,26 @@ func (this *GnParser) String() (string, error) {
 		return "", err
 	}
 	return string(tempBuffer), nil
+}
 
+func (this *GnParser) Object() (interface{}, error) {
+	c, err := this.Byte()
+	if err != nil {
+		return nil, err
+	}
+	switch c {
+	case 'b':
+		return this.Byte()
+	case 't':
+		return this.Short()
+	case 'i':
+		return this.Int()
+	case 'l':
+		return this.Long()
+	case 's':
+		return this.String()
+	default:
+		return nil, errors.New("unknow type !!!")
+	}
+	return nil, errors.New("unknow type !!!")
 }

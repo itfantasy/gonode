@@ -3,6 +3,7 @@ package gnbuffers
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 )
 
 type GnBuffer struct {
@@ -21,6 +22,14 @@ func BuildBuffer(capacity int) (*GnBuffer, error) {
 	return buffer, nil
 }
 
+func (this *GnBuffer) PushByte(value byte) error {
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
+}
+
+func (this *GnBuffer) PushShort(value int16) error {
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
+}
+
 func (this *GnBuffer) PushInt(value int32) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
@@ -35,6 +44,56 @@ func (this *GnBuffer) PushString(value string) error {
 		return err
 	}
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, buffer)
+}
+
+func (this *GnBuffer) PushObject(value interface{}) error {
+	switch value.(type) {
+	case byte:
+		if err := this.PushByte(byte('b')); err != nil {
+			return err
+		}
+		if err := this.PushByte(value.(byte)); err != nil {
+			return err
+		}
+	case int16:
+		if err := this.PushByte(byte('t')); err != nil {
+			return err
+		}
+		if err := this.PushShort(value.(int16)); err != nil {
+			return err
+		}
+	case int:
+		if err := this.PushByte(byte('i')); err != nil {
+			return err
+		}
+		if err := this.PushInt(int32(value.(int))); err != nil {
+			return err
+		}
+	case int32:
+		if err := this.PushByte(byte('i')); err != nil {
+			return err
+		}
+		if err := this.PushInt(value.(int32)); err != nil {
+			return err
+		}
+	case int64:
+		if err := this.PushByte(byte('l')); err != nil {
+			return err
+		}
+		if err := this.PushLong(value.(int64)); err != nil {
+			return err
+		}
+	case string:
+		if err := this.PushByte(byte('s')); err != nil {
+			return err
+		}
+		if err := this.PushString(value.(string)); err != nil {
+			return err
+		}
+	default:
+		return errors.New("unsupported type!!")
+	}
+	return nil
 }
 
 func (this *GnBuffer) Bytes() []byte {
