@@ -12,6 +12,7 @@ import (
 )
 
 type Lobby struct {
+	server LobbyServer
 }
 
 func (this *Lobby) SelfNodeInfo() (*gen_server.NodeInfo, error) {
@@ -44,10 +45,10 @@ func (this *Lobby) OnConn(id string) {
 
 }
 func (this *Lobby) OnMsg(id string, msg []byte) {
-	if strings.Contains("room") {
-		this.OnMsg4Room(id, msg)
+	if strings.Contains(id, "room") {
+		// native logic for roomserver
 	} else {
-		this.OnMsg4Cnt(id, msg)
+		this.server.OnMsg(id, msg)
 	}
 }
 func (this *Lobby) OnClose(id string) {
@@ -62,7 +63,7 @@ func (this *Lobby) OnReload(tag string) error {
 func (this *Lobby) CreateConnId() string {
 	return ""
 }
-func main() {
-	lobby := new(Lobby)
-	gonode.Node().Initialize(lobby)
+func (this *Lobby) Initialize(server LobbyServer) {
+	this.server = server
+	gonode.Node().Initialize(this)
 }

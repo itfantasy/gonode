@@ -71,6 +71,7 @@ func (this *GoNode) onDefaultShell(channel string, msg string) {
 }
 
 func (this *GoNode) onReload(tag string) error {
+	this.autoRecover()
 	this.logger.Info(this.sprinfLog("node reloading..."))
 	return this.behavior.OnReload(tag)
 }

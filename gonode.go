@@ -37,6 +37,25 @@ func Node() *GoNode {
 	return node
 }
 
+func Send(id string, msg []byte) {
+	Node().NetWorker().Send(id, msg)
+}
+
+func Log(msg string) {
+	Node().Logger().Info(Node().sprinfLog(msg))
+}
+
+func Console(obj interface{}) {
+	msg, err := json.Encode(obj)
+	if err != nil {
+		Node().Logger().Debug(Node().sprinfLog(msg))
+	}
+}
+
+func Error(msg string) {
+	Node().Logger().Error(Node().sprinfLog(msg))
+}
+
 // -------------- init ----------------
 
 func (this *GoNode) Initialize(behavior gen_server.GenServer) {
@@ -48,7 +67,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.behavior = behavior
 	info, err := this.behavior.SelfNodeInfo()
 	if err != nil {
-		this.logger.Error(this.sprinfLog("get the node self info err!" + err.Error()))
+		this.logger.Error("get the node self info err!" + err.Error())
 		return
 	}
 	this.info = info
@@ -99,6 +118,11 @@ func (this *GoNode) initNetWorker() error {
 		this.netWorker = new(ws.WSNetWorker)
 	}
 	return this.netWorker.BindEventListener(this)
+}
+
+// -------------- info --------------------
+func (this *GoNode) Info() *gen_server.NodeInfo {
+	return this.info
 }
 
 // -------------- redis pub/sub ------------------
