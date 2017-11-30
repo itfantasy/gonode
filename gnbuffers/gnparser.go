@@ -70,6 +70,44 @@ func (this *GnParser) String() (string, error) {
 	return string(tempBuffer), nil
 }
 
+func (this *GnParser) Hash() (map[interface{}]interface{}, error) {
+	length, err := this.Int() // get the hash len
+	if err != nil {
+		return nil, err
+	}
+	hash := make(map[interface{}]interface{})
+	var i int32
+	for i = 0; i < length; i++ {
+		k, kerr := this.Object()
+		if kerr != nil {
+			return nil, kerr
+		}
+		v, verr := this.Object()
+		if verr != nil {
+			return nil, verr
+		}
+		hash[k] = v
+	}
+	return hash, nil
+}
+
+func (this *GnParser) IntArray() ([]int32, error) {
+	length, err := this.Int() // get the []int32 len
+	if err != nil {
+		return nil, err
+	}
+	array := make([]int32, 0, length)
+	var i int32
+	for i = 0; i < length; i++ {
+		item, ierr := this.Int()
+		if ierr != nil {
+			return nil, ierr
+		}
+		array = append(array, item)
+	}
+	return array, nil
+}
+
 func (this *GnParser) Object() (interface{}, error) {
 	c, err := this.Byte()
 	if err != nil {
@@ -86,6 +124,10 @@ func (this *GnParser) Object() (interface{}, error) {
 		return this.Long()
 	case 's':
 		return this.String()
+	case 'H':
+		return this.Hash()
+	case 'I':
+		return this.IntArray()
 	default:
 		return nil, errors.New("unknow type !!!")
 	}

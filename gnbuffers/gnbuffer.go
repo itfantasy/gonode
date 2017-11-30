@@ -46,6 +46,35 @@ func (this *GnBuffer) PushString(value string) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, buffer)
 }
 
+func (this *GnBuffer) PushHash(value map[interface{}]interface{}) error {
+	length := len(value)
+	if err := this.PushInt(int32(length)); err != nil { // write the len of the hash
+		return err
+	}
+	for k, v := range value {
+		if err := this.PushObject(k); err != nil {
+			return err
+		}
+		if err := this.PushObject(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *GnBuffer) PushIntArray(value []int32) error {
+	length := len(value)
+	if err := this.PushInt(int32(length)); err != nil { // write the len of the []int
+		return err
+	}
+	for _, v := range value {
+		if err := this.PushInt(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (this *GnBuffer) PushObject(value interface{}) error {
 	switch value.(type) {
 	case byte:
@@ -88,6 +117,20 @@ func (this *GnBuffer) PushObject(value interface{}) error {
 			return err
 		}
 		if err := this.PushString(value.(string)); err != nil {
+			return err
+		}
+	case map[interface{}]interface{}:
+		if err := this.PushByte(byte('H')); err != nil {
+			return err
+		}
+		if err := this.PushHash(value.(map[interface{}]interface{})); err != nil {
+			return err
+		}
+	case []int32:
+		if err := this.PushByte(byte('I')); err != nil {
+			return err
+		}
+		if err := this.PushIntArray(value.([]int32)); err != nil {
 			return err
 		}
 	default:
