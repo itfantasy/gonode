@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+
+	"github.com/itfantasy/gonode/gnbuffers/gntypes"
 )
 
 type GnBuffer struct {
@@ -99,35 +101,35 @@ func (this *GnBuffer) PushHash(value map[interface{}]interface{}) error {
 func (this *GnBuffer) PushObject(value interface{}) error {
 	switch value.(type) {
 	case byte:
-		if err := this.PushByte(byte('b')); err != nil {
+		if err := this.PushByte(gntypes.Byte); err != nil {
 			return err
 		}
 		if err := this.PushByte(value.(byte)); err != nil {
 			return err
 		}
 	case int16:
-		if err := this.PushByte(byte('t')); err != nil {
+		if err := this.PushByte(gntypes.Short); err != nil {
 			return err
 		}
 		if err := this.PushShort(value.(int16)); err != nil {
 			return err
 		}
 	case int:
-		if err := this.PushByte(byte('i')); err != nil {
+		if err := this.PushByte(gntypes.Int); err != nil {
 			return err
 		}
 		if err := this.PushInt(int32(value.(int))); err != nil {
 			return err
 		}
 	case int32:
-		if err := this.PushByte(byte('i')); err != nil {
+		if err := this.PushByte(gntypes.Int); err != nil {
 			return err
 		}
 		if err := this.PushInt(value.(int32)); err != nil {
 			return err
 		}
 	case int64:
-		if err := this.PushByte(byte('l')); err != nil {
+		if err := this.PushByte(gntypes.Long); err != nil {
 			return err
 		}
 		if err := this.PushLong(value.(int64)); err != nil {
@@ -141,28 +143,28 @@ func (this *GnBuffer) PushObject(value interface{}) error {
 			return err
 		}
 	case float32:
-		if err := this.PushByte(byte('f')); err != nil {
+		if err := this.PushByte(gntypes.Float); err != nil {
 			return err
 		}
 		if err := this.PushFloat(value.(float32)); err != nil {
 			return err
 		}
 	case []int32:
-		if err := this.PushByte(byte('I')); err != nil {
+		if err := this.PushByte(gntypes.Ints); err != nil {
 			return err
 		}
 		if err := this.PushInts(value.([]int32)); err != nil {
 			return err
 		}
 	case []interface{}:
-		if err := this.PushByte(byte('A')); err != nil {
+		if err := this.PushByte(gntypes.Array); err != nil {
 			return err
 		}
 		if err := this.PushArray(value.([]interface{})); err != nil {
 			return err
 		}
 	case map[interface{}]interface{}:
-		if err := this.PushByte(byte('H')); err != nil {
+		if err := this.PushByte(gntypes.Hash); err != nil {
 			return err
 		}
 		if err := this.PushHash(value.(map[interface{}]interface{})); err != nil {

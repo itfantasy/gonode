@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+
+	"github.com/itfantasy/gonode/gnbuffers/gntypes"
 )
 
 type GnParser struct {
@@ -144,23 +146,23 @@ func (this *GnParser) Object() (interface{}, error) {
 		return nil, err
 	}
 	switch c {
-	case 'b':
+	case gntypes.Byte:
 		return this.Byte()
-	case 't':
+	case gntypes.Short:
 		return this.Short()
-	case 'i':
+	case gntypes.Int:
 		return this.Int()
-	case 'l':
+	case gntypes.Long:
 		return this.Long()
-	case 's':
+	case gntypes.String:
 		return this.String()
-	case 'f':
+	case gntypes.Float:
 		return this.Float()
-	case 'I':
+	case gntypes.Ints:
 		return this.Ints()
-	case 'A':
+	case gntypes.Array:
 		return this.Array()
-	case 'H':
+	case gntypes.Hash:
 		return this.Hash()
 	default:
 		return nil, errors.New("unknow type !!!")
