@@ -2,6 +2,8 @@ package lobby
 
 import (
 	"fmt"
+	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/itfantasy/gonode"
@@ -61,7 +63,7 @@ func (this *Lobby) OnReload(tag string) error {
 	return nil
 }
 func (this *Lobby) CreateConnId() string {
-	return ""
+	return "cnt" + strconv.Itoa(rand.Intn(100000))
 }
 func (this *Lobby) Initialize(server LobbyServer) {
 	this.server = server

@@ -28,6 +28,10 @@ func (this *GnParser) Byte() (byte, error) {
 	return ret, nil
 }
 
+func (this *GnParser) Bytes() []byte {
+	return this.buffer
+}
+
 func (this *GnParser) Short() (int16, error) {
 	var ret int16
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
@@ -70,6 +74,49 @@ func (this *GnParser) String() (string, error) {
 	return string(tempBuffer), nil
 }
 
+func (this *GnParser) Float() (float32, error) {
+	var ret float32
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	if err != nil {
+		return 0, err
+	}
+	return ret, nil
+}
+
+func (this *GnParser) Ints() ([]int32, error) {
+	length, err := this.Int() // get the []int32 len
+	if err != nil {
+		return nil, err
+	}
+	array := make([]int32, 0, length)
+	var i int32
+	for i = 0; i < length; i++ {
+		item, ierr := this.Int()
+		if ierr != nil {
+			return nil, ierr
+		}
+		array = append(array, item)
+	}
+	return array, nil
+}
+
+func (this *GnParser) Array() ([]interface{}, error) {
+	length, err := this.Int() // get the []int32 len
+	if err != nil {
+		return nil, err
+	}
+	array := make([]interface{}, 0, length)
+	var i int32
+	for i = 0; i < length; i++ {
+		item, ierr := this.Object()
+		if ierr != nil {
+			return nil, ierr
+		}
+		array = append(array, item)
+	}
+	return array, nil
+}
+
 func (this *GnParser) Hash() (map[interface{}]interface{}, error) {
 	length, err := this.Int() // get the hash len
 	if err != nil {
@@ -91,23 +138,6 @@ func (this *GnParser) Hash() (map[interface{}]interface{}, error) {
 	return hash, nil
 }
 
-func (this *GnParser) IntArray() ([]int32, error) {
-	length, err := this.Int() // get the []int32 len
-	if err != nil {
-		return nil, err
-	}
-	array := make([]int32, 0, length)
-	var i int32
-	for i = 0; i < length; i++ {
-		item, ierr := this.Int()
-		if ierr != nil {
-			return nil, ierr
-		}
-		array = append(array, item)
-	}
-	return array, nil
-}
-
 func (this *GnParser) Object() (interface{}, error) {
 	c, err := this.Byte()
 	if err != nil {
@@ -124,10 +154,14 @@ func (this *GnParser) Object() (interface{}, error) {
 		return this.Long()
 	case 's':
 		return this.String()
+	case 'f':
+		return this.Float()
+	case 'I':
+		return this.Ints()
+	case 'A':
+		return this.Array()
 	case 'H':
 		return this.Hash()
-	case 'I':
-		return this.IntArray()
 	default:
 		return nil, errors.New("unknow type !!!")
 	}

@@ -26,6 +26,10 @@ func (this *GnBuffer) PushByte(value byte) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
 
+func (this *GnBuffer) PushBytes(value []byte) error {
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
+}
+
 func (this *GnBuffer) PushShort(value int16) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
@@ -46,6 +50,36 @@ func (this *GnBuffer) PushString(value string) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, buffer)
 }
 
+func (this *GnBuffer) PushFloat(value float32) error {
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
+}
+
+func (this *GnBuffer) PushInts(value []int32) error {
+	length := len(value)
+	if err := this.PushInt(int32(length)); err != nil { // write the len of the []int
+		return err
+	}
+	for _, v := range value {
+		if err := this.PushInt(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *GnBuffer) PushArray(value []interface{}) error {
+	length := len(value)
+	if err := this.PushInt(int32(length)); err != nil { // write the len of the []int
+		return err
+	}
+	for _, v := range value {
+		if err := this.PushObject(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (this *GnBuffer) PushHash(value map[interface{}]interface{}) error {
 	length := len(value)
 	if err := this.PushInt(int32(length)); err != nil { // write the len of the hash
@@ -56,19 +90,6 @@ func (this *GnBuffer) PushHash(value map[interface{}]interface{}) error {
 			return err
 		}
 		if err := this.PushObject(v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (this *GnBuffer) PushIntArray(value []int32) error {
-	length := len(value)
-	if err := this.PushInt(int32(length)); err != nil { // write the len of the []int
-		return err
-	}
-	for _, v := range value {
-		if err := this.PushInt(v); err != nil {
 			return err
 		}
 	}
@@ -119,18 +140,32 @@ func (this *GnBuffer) PushObject(value interface{}) error {
 		if err := this.PushString(value.(string)); err != nil {
 			return err
 		}
-	case map[interface{}]interface{}:
-		if err := this.PushByte(byte('H')); err != nil {
+	case float32:
+		if err := this.PushByte(byte('f')); err != nil {
 			return err
 		}
-		if err := this.PushHash(value.(map[interface{}]interface{})); err != nil {
+		if err := this.PushFloat(value.(float32)); err != nil {
 			return err
 		}
 	case []int32:
 		if err := this.PushByte(byte('I')); err != nil {
 			return err
 		}
-		if err := this.PushIntArray(value.([]int32)); err != nil {
+		if err := this.PushInts(value.([]int32)); err != nil {
+			return err
+		}
+	case []interface{}:
+		if err := this.PushByte(byte('A')); err != nil {
+			return err
+		}
+		if err := this.PushArray(value.([]interface{})); err != nil {
+			return err
+		}
+	case map[interface{}]interface{}:
+		if err := this.PushByte(byte('H')); err != nil {
+			return err
+		}
+		if err := this.PushHash(value.(map[interface{}]interface{})); err != nil {
 			return err
 		}
 	default:
