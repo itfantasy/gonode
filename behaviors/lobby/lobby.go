@@ -39,6 +39,7 @@ func (this *Lobby) IsInterestedIn(string) bool {
 }
 func (this *Lobby) Start() {
 	fmt.Println("node starting...")
+	this.server.Start()
 }
 func (this *Lobby) Update() {
 
