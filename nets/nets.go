@@ -17,6 +17,6 @@ const (
 	None Enum_NetWorkerType = "none"
 	WS   Enum_NetWorkerType = "ws"
 	TCP  Enum_NetWorkerType = "tcp"
-	UDP  Enum_NetWorkerType = "udp"
+	KCP  Enum_NetWorkerType = "kcp"
 	HTTP Enum_NetWorkerType = "http"
 )
