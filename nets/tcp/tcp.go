@@ -3,11 +3,11 @@ package tcp
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 
 	"github.com/itfantasy/gonode/nets"
+	"github.com/json-iterator/go"
 )
 
 type TcpNetWorker struct {
@@ -31,11 +31,7 @@ func (this *TcpNetWorker) Listen(url string) error {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			if conn != nil {
-				this.onError(conn, err)
-			} else {
-				fmt.Println(err) // an err without conn
-			}
+			this.onError(conn, err)
 			continue
 		}
 		go this.h_tcpSocket(conn)
@@ -44,26 +40,36 @@ func (this *TcpNetWorker) Listen(url string) error {
 }
 
 func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
-	url := conn.RemoteAddr().String()
-	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	if legal {
-		this.onConn(conn, id)
-		var buf [4096]byte // the rev buf
-		for {
-			n, err := conn.Read(buf[0:])
-			if err != nil {
-				this.onError(conn, err)
-				break
-			}
-			if n > 0 {
-				datas := bytes.NewBuffer(nil)
-				datas.Write(buf[0:n])
-				this.onMsg(conn, datas.Bytes())
-			}
+	id, exists := this.getInfoIdByConn(conn)
+	//url := conn.RemoteAddr().String()
+	//id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
+	//if legal {
+	//this.onConn(conn, id)
+	var buf [4096]byte // the rev buf
+	for {
+		n, err := conn.Read(buf[0:])
+		if err != nil {
+			this.onError(conn, err)
+			break
 		}
-	} else {
-		conn.Close() // dispose the illegel conn
+		if n > 0 {
+			var temp []byte = make([]byte, n)
+			datas := bytes.NewBuffer(temp)
+			datas.Write(buf[0:n])
+			if exists {
+				this.onMsg(conn, id, datas.Bytes())
+			} else {
+				if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
+					this.onError(conn, err)
+				}
+			}
+		} else {
+			this.onError(conn, errors.New("receive no datas!!"))
+		}
 	}
+	//} else {
+	//conn.Close() // dispose the illegel conn
+	//}
 }
 
 func (this *TcpNetWorker) Connect(url string, origin string) error {
@@ -79,6 +85,7 @@ func (this *TcpNetWorker) Connect(url string, origin string) error {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err == nil {
+		this.doHandShake(conn, origin)
 		go this.h_tcpSocket(conn)
 	}
 	return err
@@ -111,11 +118,11 @@ func (this *TcpNetWorker) onConn(conn net.Conn, id string) {
 	}
 }
 
-func (this *TcpNetWorker) onMsg(conn net.Conn, msg []byte) {
-	id, exists := this.getInfoIdByConn(conn)
-	if exists {
-		this.eventListener.OnMsg(id, msg)
-	}
+func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
+	//id, exists := this.getInfoIdByConn(conn)
+	//if exists {
+	this.eventListener.OnMsg(id, msg)
+	//}
 }
 
 func (this *TcpNetWorker) onClose(conn net.Conn) {
@@ -128,10 +135,17 @@ func (this *TcpNetWorker) onClose(conn net.Conn) {
 }
 
 func (this *TcpNetWorker) onError(conn net.Conn, err error) {
-	id, exists := this.getInfoIdByConn(conn)
-	if exists {
-		this.eventListener.OnError(id, err)
-		this.onClose(conn) // close the conn with errors
+	if conn != nil {
+		id, exists := this.getInfoIdByConn(conn)
+		if exists {
+			this.eventListener.OnError(id, err)
+			this.onClose(conn) // close the conn with errors
+		} else {
+			this.eventListener.OnError("", err)
+			this.onClose(conn) // close the conn with errors
+		}
+	} else {
+		this.eventListener.OnError("", err)
 	}
 }
 
@@ -151,4 +165,44 @@ func (this *TcpNetWorker) Close(id string) error {
 		return conn.Close()
 	}
 	return errors.New("there is not the id in local record!")
+}
+
+func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string) error {
+	info := make(map[string]string)
+	info["Origin"] = origin
+	datas, err := jsoniter.Marshal(info)
+	if err != nil {
+		return err
+	}
+	_, err2 := conn.Write(datas)
+	if err2 != nil {
+		return err2
+	}
+	url := origin
+	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
+	if legal {
+		this.onConn(conn, id)
+		return nil
+	} else {
+		return errors.New("handshake illegal!!")
+	}
+}
+
+func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
+	var datas map[string]string
+	if err := jsoniter.Unmarshal([]byte(info), &datas); err != nil {
+		return err
+	}
+	origin, exists := datas["Origin"]
+	if !exists {
+		return errors.New("handshake datas missing!")
+	}
+	url := origin
+	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
+	if legal {
+		this.onConn(conn, id)
+		return nil
+	} else {
+		return errors.New("handshake illegal!!")
+	}
 }
