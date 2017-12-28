@@ -13,6 +13,7 @@ import (
 	"github.com/itfantasy/gonode/components/logger"
 	"github.com/itfantasy/gonode/components/redis"
 	"github.com/itfantasy/gonode/nets"
+	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/ws"
 	"github.com/itfantasy/gonode/roles/shellcmd/cmd"
 	"github.com/itfantasy/gonode/utils/json"
@@ -116,6 +117,10 @@ func (this *GoNode) initNetWorker() error {
 	switch infos[0] {
 	case (string)(nets.WS):
 		this.netWorker = new(ws.WSNetWorker)
+		break
+	case (string)(nets.KCP):
+		this.netWorker = new(kcp.KcpNetWorker)
+		break
 	}
 	return this.netWorker.BindEventListener(this)
 }

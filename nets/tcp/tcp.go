@@ -40,11 +40,6 @@ func (this *TcpNetWorker) Listen(url string) error {
 }
 
 func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
-	id, exists := this.getInfoIdByConn(conn)
-	//url := conn.RemoteAddr().String()
-	//id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	//if legal {
-	//this.onConn(conn, id)
 	var buf [4096]byte // the rev buf
 	for {
 		n, err := conn.Read(buf[0:])
@@ -53,7 +48,8 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			break
 		}
 		if n > 0 {
-			var temp []byte = make([]byte, n)
+			id, exists := this.getInfoIdByConn(conn)
+			var temp []byte = make([]byte, 0, n)
 			datas := bytes.NewBuffer(temp)
 			datas.Write(buf[0:n])
 			if exists {
@@ -67,9 +63,6 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			this.onError(conn, errors.New("receive no datas!!"))
 		}
 	}
-	//} else {
-	//conn.Close() // dispose the illegel conn
-	//}
 }
 
 func (this *TcpNetWorker) Connect(url string, origin string) error {
@@ -119,10 +112,7 @@ func (this *TcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
-	//id, exists := this.getInfoIdByConn(conn)
-	//if exists {
 	this.eventListener.OnMsg(id, msg)
-	//}
 }
 
 func (this *TcpNetWorker) onClose(conn net.Conn) {
