@@ -10,12 +10,12 @@ import (
 	native_redis "github.com/garyburd/redigo/redis"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/behaviors/shellcmd/cmd"
 	"github.com/itfantasy/gonode/components/logger"
 	"github.com/itfantasy/gonode/components/redis"
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/ws"
-	"github.com/itfantasy/gonode/roles/shellcmd/cmd"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
