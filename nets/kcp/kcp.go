@@ -3,6 +3,7 @@ package kcp
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 
@@ -64,12 +65,12 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 func (this *KcpNetWorker) Connect(url string, origin string) error {
 	this.initKvvk()
 
-	url = strings.Trim(url, "kcp://") // trim the ws header
-	infos := strings.Split(url, "/")  // parse the sub path
+	theUrl := strings.Trim(url, "kcp://") // trim the ws header
+	infos := strings.Split(theUrl, "/")   // parse the sub path
 
 	conn, err := kcp.Dial(infos[0])
 	if err == nil {
-		this.doHandShake(conn, origin)
+		this.doHandShake(conn, origin, url)
 		go this.h_kcpSocket(conn)
 	}
 	return err
@@ -148,7 +149,7 @@ func (this *KcpNetWorker) Close(id string) error {
 	return errors.New("there is not the id in local record!")
 }
 
-func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string) error {
+func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -159,7 +160,6 @@ func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string) error {
 	if err2 != nil {
 		return err2
 	}
-	url := origin
 	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
 	if legal {
 		this.onConn(conn, id)
@@ -182,6 +182,7 @@ func (this *KcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
 	if legal {
 		this.onConn(conn, id)
+		fmt.Println("handshake succeed !!")
 		return nil
 	} else {
 		return errors.New("handshake illegal!!")

@@ -68,8 +68,8 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 func (this *TcpNetWorker) Connect(url string, origin string) error {
 	this.initKvvk()
 
-	url = strings.Trim(url, "tcp://") // trim the ws header
-	infos := strings.Split(url, "/")  // parse the sub path
+	theUrl := strings.Trim(url, "tcp://") // trim the ws header
+	infos := strings.Split(theUrl, "/")   // parse the sub path
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", infos[0])
 	if err != nil {
@@ -78,7 +78,7 @@ func (this *TcpNetWorker) Connect(url string, origin string) error {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err == nil {
-		this.doHandShake(conn, origin)
+		this.doHandShake(conn, origin, url)
 		go this.h_tcpSocket(conn)
 	}
 	return err
@@ -157,7 +157,7 @@ func (this *TcpNetWorker) Close(id string) error {
 	return errors.New("there is not the id in local record!")
 }
 
-func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string) error {
+func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -168,7 +168,6 @@ func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string) error {
 	if err2 != nil {
 		return err2
 	}
-	url := origin
 	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
 	if legal {
 		this.onConn(conn, id)
