@@ -203,7 +203,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 func (this *GoNode) autoDetect() {
 	for {
 		timer.Sleep(5000)
-		this.logger.Info("auto detecting other nodes..")
+		//this.logger.Info("auto detecting other nodes..")
 		// get all node infos from the coreRedis and compare with the local record
 		ids, err := this.coreRedis.SMembers(GONODE_INFO)
 		if err != nil {
