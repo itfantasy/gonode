@@ -94,11 +94,11 @@ func (this *Redis) Exists(key string) (bool, error) {
 	return ret, err
 }
 
-func (this *Redis) Delete(key string) (bool, error) {
+func (this *Redis) Delete(key string) (int64, error) {
 	rc := this.RedisClient.Get()
-	suc, err := redis.String(rc.Do("DELETE", key))
+	suc, err := redis.Int64(rc.Do("DEL", key))
 	rc.Close()
-	return suc == "OK", err
+	return suc, err
 }
 
 // -------------pub/sub----------------
