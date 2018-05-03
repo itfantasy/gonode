@@ -28,6 +28,10 @@ func (this *GnBuffer) PushByte(value byte) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
 
+func (this *GnBuffer) PushBool(value bool) error {
+	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
+}
+
 func (this *GnBuffer) PushBytes(value []byte) error {
 	return binary.Write(this.bytesBuffer, binary.LittleEndian, value)
 }
@@ -105,6 +109,13 @@ func (this *GnBuffer) PushObject(value interface{}) error {
 			return err
 		}
 		if err := this.PushByte(value.(byte)); err != nil {
+			return err
+		}
+	case bool:
+		if err := this.PushByte(gntypes.Bool); err != nil {
+			return err
+		}
+		if err := this.PushBool(value.(bool)); err != nil {
 			return err
 		}
 	case int16:

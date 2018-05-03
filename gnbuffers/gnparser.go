@@ -34,6 +34,15 @@ func (this *GnParser) Bytes() []byte {
 	return this.buffer
 }
 
+func (this *GnParser) Bool() (bool, error) {
+	var ret bool
+	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	if err != nil {
+		return false, err
+	}
+	return ret, nil
+}
+
 func (this *GnParser) Short() (int16, error) {
 	var ret int16
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)

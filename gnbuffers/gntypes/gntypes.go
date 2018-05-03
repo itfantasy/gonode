@@ -10,5 +10,6 @@ const (
 	Ints        = 'I'
 	Array       = 'A'
 	Hash        = 'H'
+	Bool        = 'B'
 	Unknow      = 0
 )
