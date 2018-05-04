@@ -157,6 +157,8 @@ func (this *GnParser) Object() (interface{}, error) {
 	switch c {
 	case gntypes.Byte:
 		return this.Byte()
+	case gntypes.Bool:
+		return this.Bool()
 	case gntypes.Short:
 		return this.Short()
 	case gntypes.Int:
