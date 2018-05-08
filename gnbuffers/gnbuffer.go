@@ -103,6 +103,15 @@ func (this *GnBuffer) PushHash(value map[interface{}]interface{}) error {
 }
 
 func (this *GnBuffer) PushObject(value interface{}) error {
+	if value == nil {
+		if err := this.PushByte(gntypes.Null); err != nil {
+			return err
+		}
+		if err := this.PushByte(byte(0)); err != nil {
+			return err
+		}
+		return nil
+	}
 	switch value.(type) {
 	case byte:
 		if err := this.PushByte(gntypes.Byte); err != nil {
@@ -189,4 +198,8 @@ func (this *GnBuffer) PushObject(value interface{}) error {
 
 func (this *GnBuffer) Bytes() []byte {
 	return this.bytesBuffer.Bytes() // has been a slic
+}
+
+func (this *GnBuffer) Dispose() {
+	this.buffer = nil
 }

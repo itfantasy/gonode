@@ -56,6 +56,7 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 					this.onError(conn, err)
 				}
 			}
+			temp = nil // dispose the temp buffer
 		} else {
 			this.onError(conn, errors.New("receive no datas!!"))
 		}

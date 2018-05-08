@@ -175,6 +175,14 @@ func (this *GnParser) Object() (interface{}, error) {
 		return this.Array()
 	case gntypes.Hash:
 		return this.Hash()
+	case gntypes.Null:
+		if none, err := this.Byte(); err != nil {
+			return nil, err
+		} else if none != byte(0) {
+			return nil, errors.New("unknow type !!!")
+		} else {
+			return nil, nil
+		}
 	default:
 		return nil, errors.New("unknow type !!!")
 	}

@@ -11,5 +11,6 @@ const (
 	Array       = 'A'
 	Hash        = 'H'
 	Bool        = 'B'
+	Null        = 'N'
 	Unknow      = 0
 )
