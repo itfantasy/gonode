@@ -18,6 +18,8 @@ type KcpNetWorker struct {
 
 func (this *KcpNetWorker) Listen(url string) error {
 	this.initKvvk()
+	go this.autoPing()
+
 	url = strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
 	listener, err := kcp.Listen(infos[0])
@@ -105,6 +107,18 @@ func (this *KcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
+	this.resetConnState(id)
+	if msg[0] == 35 { // '#'
+		strmsg := string(msg)
+		if strmsg == "#pong" {
+			fmt.Println("receive pong from.." + id)
+			return
+		} else if strmsg == "#ping" {
+			fmt.Println("re sending pong to..." + id)
+			this.SendAsync(id, []byte("#pong")) // return the pong pck
+			return
+		}
+	}
 	this.eventListener.OnMsg(id, msg)
 }
 

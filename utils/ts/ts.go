@@ -26,6 +26,10 @@ func Now() int64 {
 	return time.Now().Unix()
 }
 
+func MS() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
 func Day() int64 {
 	return NowToDay(Now())
 }

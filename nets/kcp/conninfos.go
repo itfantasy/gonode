@@ -21,6 +21,7 @@ func (this *KcpNetWorker) initKvvk() {
 		connInfos.kv = make(map[string]net.Conn)
 		connInfos.vk = make(map[net.Conn]string)
 	}
+	this.initStates()
 }
 
 func (this *KcpNetWorker) addConnInfo(id string, conn net.Conn) error {
@@ -35,6 +36,7 @@ func (this *KcpNetWorker) addConnInfo(id string, conn net.Conn) error {
 	connInfos.kv[id] = conn
 	connInfos.vk[conn] = id
 
+	this.newConnState(id)
 	return nil
 }
 
@@ -46,6 +48,7 @@ func (this *KcpNetWorker) removeConnInfo(id string) {
 	defer connInfos.LOCK.Unlock()
 
 	if ok {
+		this.disposeConnState(id)
 		delete(connInfos.kv, id)
 	}
 	if ok2 {
