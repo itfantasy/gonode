@@ -3,7 +3,6 @@ package stl
 import (
 	"errors"
 	"sync"
-	//"fmt"
 )
 
 type List struct {
@@ -59,9 +58,6 @@ func (this *List) RemoveAt(index int) error {
 }
 
 func (this *List) Remove(item interface{}) bool {
-	this.Lock()
-	defer this.Unlock()
-
 	index := this.IndexOf(item)
 	if index < 0 {
 		return false
@@ -84,9 +80,6 @@ func (this *List) IndexOf(item interface{}) int {
 }
 
 func (this *List) Contains(item interface{}) bool {
-	this.RLock()
-	defer this.RUnlock()
-
 	return this.IndexOf(item) >= 0
 }
 

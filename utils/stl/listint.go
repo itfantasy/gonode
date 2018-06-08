@@ -59,9 +59,6 @@ func (this *ListInt) RemoveAt(index int) error {
 }
 
 func (this *ListInt) Remove(item int32) bool {
-	this.Lock()
-	defer this.Unlock()
-
 	index := this.IndexOf(item)
 	if index < 0 {
 		return false
@@ -84,9 +81,6 @@ func (this *ListInt) IndexOf(item int32) int {
 }
 
 func (this *ListInt) Contains(item int32) bool {
-	this.RLock()
-	defer this.RUnlock()
-
 	return this.IndexOf(item) >= 0
 }
 

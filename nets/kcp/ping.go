@@ -30,7 +30,7 @@ func (this *KcpNetWorker) autoPing() {
 	dirtyIds := make([]string, 0, 100)
 	for {
 		ms := ts.MS()
-		timer.Sleep(10000)
+		timer.Sleep(3000)
 		stateLock.Lock()
 		for id, state := range connStates {
 			if ms-state.ts > 5000 {
