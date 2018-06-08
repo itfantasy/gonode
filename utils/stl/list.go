@@ -108,7 +108,7 @@ func (this *List) Get(index int) (interface{}, error) {
 	this.RLock()
 	defer this.RUnlock()
 
-	if index > len(this.array) {
+	if index >= len(this.array) {
 		return nil, errors.New("ArgumentOutOfRange")
 	}
 	return this.array[index], nil
