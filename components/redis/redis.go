@@ -7,21 +7,36 @@ package redis
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/itfantasy/gonode/components/etc"
+	"github.com/itfantasy/gonode/components/pubsub"
+)
+
+const (
+	OPT_MAXPOOL string = "OPT_MAXPOOL"
 )
 
 type Redis struct {
+	auth        string
 	RedisClient *redis.Pool
-	Psc         redis.PubSubConn
-	lock        sync.RWMutex
+	pscDict     map[string]*redis.PubSubConn
+	subscriber  pubsub.ISubscriber
+	opts        *etc.CompOptions
+}
+
+func NewRedis() *Redis {
+	this := new(Redis)
+	this.pscDict = make(map[string]*redis.PubSubConn)
+	this.opts = etc.NewCompOptions()
+	this.opts.Set(OPT_MAXPOOL, 100)
+	return this
 }
 
 // ------------- com ----------------
 
-func (this *Redis) Conn(url string, db int, maxpool int, auth string) error {
+func (this *Redis) Conn(url string, db string) error {
 	// try to make a conn to redis
 	c, err := redis.Dial("tcp", url)
 	if err != nil {
@@ -31,6 +46,7 @@ func (this *Redis) Conn(url string, db int, maxpool int, auth string) error {
 	defer c.Close()
 	// enable the pool
 
+	maxpool := this.opts.GetInt(OPT_MAXPOOL)
 	// redis host
 	REDIS_HOST := url
 	// db
@@ -47,8 +63,8 @@ func (this *Redis) Conn(url string, db int, maxpool int, auth string) error {
 				fmt.Println("[Redis]::create a new redis conn faild!!")
 				return nil, err
 			}
-			if auth != "" {
-				_, err2 := c.Do("AUTH", auth)
+			if this.auth != "" {
+				_, err2 := c.Do("AUTH", this.auth)
 				if err2 != nil {
 					fmt.Println("[Redis]::author faild!!")
 					c.Close()
@@ -61,10 +77,19 @@ func (this *Redis) Conn(url string, db int, maxpool int, auth string) error {
 		},
 	}
 
-	// ps: use another conn for the pub/sub, otherwise there will be an error..
-	this.Psc = redis.PubSubConn{this.RedisClient.Get()}
-
 	return nil
+}
+
+func (this *Redis) SetAuthor(user string, pass string) {
+	if user != "" {
+		this.auth = user + ":" + pass
+	} else {
+		this.auth = pass
+	}
+}
+
+func (this *Redis) SetOption(key string, val interface{}) {
+	this.opts.Set(key, val)
 }
 
 func (this *Redis) Close() {
@@ -103,6 +128,10 @@ func (this *Redis) Delete(key string) (int64, error) {
 
 // -------------pub/sub----------------
 
+func (this *Redis) BindSubscriber(subscriber pubsub.ISubscriber) {
+	this.subscriber = subscriber
+}
+
 func (this *Redis) Publish(channel string, msg string) {
 	rc := this.RedisClient.Get()
 	rc.Do("PUBLISH", channel, msg)
@@ -110,7 +139,35 @@ func (this *Redis) Publish(channel string, msg string) {
 }
 
 func (this *Redis) Subscribe(channel string) {
-	this.Psc.Subscribe(channel)
+	_, exist := this.pscDict[channel]
+	if !exist {
+		// ps: use another conn for the pub/sub, otherwise there will be an error..
+		psc := redis.PubSubConn{this.RedisClient.Get()}
+		err := psc.Subscribe(channel)
+		if err != nil {
+			if this.subscriber != nil {
+				this.subscriber.OnSubError(channel, err)
+			}
+		}
+		for {
+			switch v := psc.Receive().(type) {
+			case redis.Message:
+				if this.subscriber != nil {
+					this.subscriber.OnSubMessage(v.Channel, string(v.Data))
+				}
+			case redis.Subscription:
+				//fmt.Println("%s: %s %d\n", v.Channel, v.Kind, v.Count)
+				if this.subscriber != nil {
+					this.subscriber.OnSubscribe(v.Channel)
+				}
+			case error:
+				if this.subscriber != nil {
+					this.subscriber.OnSubError(channel, v)
+				}
+				return
+			}
+		}
+	}
 }
 
 // -------------set----------------

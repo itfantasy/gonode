@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
-
-	native_redis "github.com/garyburd/redigo/redis"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/behaviors/shellcmd/cmd"
@@ -73,17 +72,17 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	}
 	this.info = info
 	// init the core redis
-	this.coreRedis = new(redis.Redis)
-	if err := this.coreRedis.Conn(this.info.RedUrl,
-		this.info.RedDB,
-		this.info.RedPool,
-		this.info.RedAuth); err != nil {
+	this.coreRedis = redis.NewRedis()
+	this.coreRedis.SetAuthor("", this.info.RedAuth)
+	this.coreRedis.SetOption(redis.OPT_MAXPOOL, this.info.RedPool)
+	if err := this.coreRedis.Conn(this.info.RedUrl, strconv.Itoa(this.info.RedDB)); err != nil {
 		this.logger.Error(this.sprinfLog("cannot connect to the core redis!!"))
 		return
 	}
 	// sub the redis channel
-	this.coreRedis.Subscribe(GONODE_PUB_CHAN)
-	go this.handleSubscribe()
+	this.coreRedis.BindSubscriber(this)
+	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
+	//this.handleSubscribe()
 
 	if this.info.Net != "" {
 		// init the networker
@@ -104,7 +103,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.behavior.Start()
 
 	for {
-		timer.Sleep(1)
+		timer.Sleep(160)
 		this.behavior.Update()
 	}
 
@@ -145,6 +144,19 @@ func (this *GoNode) PublishMsg(msg string) {
 	this.coreRedis.Publish(GONODE_PUB_CHAN, msg)
 }
 
+func (this *GoNode) OnSubscribe(channel string) {
+	this.logger.Info("gonode has subscribed the channel:" + channel)
+}
+
+func (this *GoNode) OnSubMessage(channel string, msg string) {
+	this.onShell(channel, msg)
+}
+
+func (this *GoNode) OnSubError(channel string, err error) {
+	this.logger.Error(this.sprinfLog(err.Error()))
+}
+
+/*
 func (this *GoNode) handleSubscribe() {
 	for {
 		switch v := this.coreRedis.Psc.Receive().(type) {
@@ -158,6 +170,7 @@ func (this *GoNode) handleSubscribe() {
 		}
 	}
 }
+*/
 
 // -------------- net ------------------
 
