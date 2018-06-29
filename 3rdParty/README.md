@@ -4,7 +4,7 @@
 
 - [kcp-go](https://github.com/xtaci/kcp-go) - A Production-Grade Reliable-UDP Library for golang
 
-- [fasthttp](https://github.com/valyala/fasthttp) - Fast HTTP package for Go. Tuned for high performance. Zero memory allocations in hot paths. Up to 10x faster than net/http
+- [fasthttp](https://github.com/valyala/fasthttp) - Fast HTTP package for Go. 
 
 - [redigo](https://github.com/gomodule/redigo) - Go client for Redis
 
