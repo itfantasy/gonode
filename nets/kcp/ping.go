@@ -30,18 +30,16 @@ func (this *KcpNetWorker) autoPing() {
 	dirtyIds := make([]string, 0, 100)
 	for {
 		ms := ts.MS()
-		timer.Sleep(3000)
+		timer.Sleep(2000)
 		stateLock.Lock()
 		for id, state := range connStates {
-			if ms-state.ts > 5000 {
-				if state.ping {
-					dirtyIds = append(dirtyIds, id)
-					fmt.Println("conn time out.." + id)
-				} else if ms-state.ts > 10000 {
-					fmt.Println("sending a ping to..." + id)
-					this.SendAsync(id, []byte("#ping"))
-					state.ping = true
-				}
+			if state.ping {
+				dirtyIds = append(dirtyIds, id)
+				fmt.Println("conn time out.." + id)
+			} else if ms-state.ts > 2000 {
+				fmt.Println("sending a ping to..." + id)
+				this.SendAsync(id, []byte("#ping"))
+				state.ping = true
 			}
 			timer.Sleep(10)
 		}
