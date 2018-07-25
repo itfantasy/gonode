@@ -34,16 +34,16 @@ func (this *HashTable) Add(key interface{}, value interface{}) error {
 	return nil
 }
 
-func (this *HashTable) Remove(key interface{}) bool {
+func (this *HashTable) Remove(key interface{}) error {
 	this.Lock()
 	defer this.Unlock()
 
 	_, exist := this._map[key]
 	if exist {
 		delete(this._map, key)
-		return true
+		return nil
 	}
-	return false
+	return errors.New("Do Not Has The Key!")
 }
 
 func (this *HashTable) Set(key interface{}, value interface{}) {

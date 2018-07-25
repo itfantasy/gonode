@@ -36,16 +36,16 @@ func (this *Dictionary) Add(key string, value interface{}) error {
 	return nil
 }
 
-func (this *Dictionary) Remove(key string) bool {
+func (this *Dictionary) Remove(key string) error {
 	this.Lock()
 	defer this.Unlock()
 
 	_, exist := this._map[key]
 	if exist {
 		delete(this._map, key)
-		return true
+		return nil
 	}
-	return false
+	return errors.New("Do Not Has The Key:" + key)
 }
 
 func (this *Dictionary) Set(key string, value interface{}) {

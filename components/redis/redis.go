@@ -261,6 +261,20 @@ func (this *Redis) HLen(key string) (int, error) {
 	return length, err
 }
 
+func (this *Redis) HKeys(key string) ([]string, error) {
+	rc := this.RedisClient.Get()
+	dict, err := redis.Strings(rc.Do("HKEYS", key))
+	rc.Close()
+	return dict, err
+}
+
+func (this *Redis) KVals(key string) ([]string, error) {
+	rc := this.RedisClient.Get()
+	dict, err := redis.Strings(rc.Do("HVALS", key))
+	rc.Close()
+	return dict, err
+}
+
 func (this *Redis) HGetAll(key string) (map[string]string, error) {
 	rc := this.RedisClient.Get()
 	dict, err := redis.StringMap(rc.Do("HGETALL", key))
