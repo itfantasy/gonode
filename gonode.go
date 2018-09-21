@@ -83,16 +83,14 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.coreRedis.BindSubscriber(this)
 	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
 
-	if this.info.Net != "" {
-		// init the networker
-		if err := this.initNetWorker(); err != nil {
-			this.logger.Error(this.sprinfLog(err.Error()))
-			return
-		}
-		// register self info to core redis
-		this.registerSelf()
-		go this.netWorker.Listen(this.info.Url)
+	// init the networker
+	if err := this.initNetWorker(); err != nil {
+		this.logger.Error(this.sprinfLog(err.Error()))
+		return
 	}
+	// register self info to core redis
+	this.registerSelf()
+	go this.netWorker.Listen(this.info.Url)
 
 	// check if auto detect
 	if this.info.AutoDetect {
@@ -174,10 +172,10 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	info, err := node.getNodeInfo(url)
 	if err != nil {
 		// cannot find the node in lan
-		if node.info.Net == "LAN" {
-			this.logger.Info(this.sprinfLog("can not find the node! give up the url:" + url))
+		if !node.info.Public {
+			this.logger.Info(this.sprinfLog("not a inside node! give up the url:" + url))
 			return "", false
-		} else { // if node.Info.Net == "WAN"
+		} else {
 			connId := this.behavior.OnRanId()
 			return connId, true
 		}
