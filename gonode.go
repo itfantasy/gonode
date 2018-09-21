@@ -65,7 +65,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.logger = new(logger.Logger)
 	// get the node self info config
 	this.behavior = behavior
-	info, err := this.behavior.SelfNodeInfo()
+	info, err := this.behavior.SelfInfo()
 	if err != nil {
 		this.logger.Error("get the node self info err!" + err.Error())
 		return
@@ -82,7 +82,6 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	// sub the redis channel
 	this.coreRedis.BindSubscriber(this)
 	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
-	//this.handleSubscribe()
 
 	if this.info.Net != "" {
 		// init the networker
@@ -101,12 +100,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	}
 
 	this.behavior.Start()
-
-	for {
-		timer.Sleep(160)
-		this.behavior.Update()
-	}
-
+	select {}
 	this.logger.Error("shuting down!!!")
 }
 
@@ -156,22 +150,6 @@ func (this *GoNode) OnSubError(channel string, err error) {
 	this.logger.Error(this.sprinfLog(err.Error()))
 }
 
-/*
-func (this *GoNode) handleSubscribe() {
-	for {
-		switch v := this.coreRedis.Psc.Receive().(type) {
-		case native_redis.Message:
-			this.onShell(v.Channel, string(v.Data))
-		case native_redis.Subscription:
-			this.logger.Info(fmt.Sprintf("%s: %s %d\n", v.Channel, v.Kind, v.Count))
-		case error:
-			this.logger.Error(this.sprinfLog(v.Error()))
-			return
-		}
-	}
-}
-*/
-
 // -------------- net ------------------
 
 func (this *GoNode) NetWorker() nets.INetWorker {
@@ -200,7 +178,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 			this.logger.Info(this.sprinfLog("can not find the node! give up the url:" + url))
 			return "", false
 		} else { // if node.Info.Net == "WAN"
-			connId := this.behavior.CreateConnId()
+			connId := this.behavior.OnRanId()
 			return connId, true
 		}
 	} else {
@@ -239,7 +217,7 @@ func (this *GoNode) checkNewNode(id string) {
 	exist := this.netWorker.IsIdExists(id)
 	if !exist {
 		// check the local node is interested in the new node
-		if this.behavior.IsInterestedIn(id) {
+		if this.behavior.OnDetect(id) {
 			this.logger.Info(this.sprinfLog("a new node has been found![" + id + "]"))
 			// find the node url by the id
 			url, err := this.getNodeUrlById(id)

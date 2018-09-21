@@ -45,17 +45,8 @@ func (this *GoNode) onShell(channel string, msg string) {
 			msg := cmd.Print(this.info.Id, from, this.getNodeStatusInfo())
 			this.PublishMsg(msg)
 		case cmd.PRINT:
-			fmt.Println(from + ":")
+			fmt.Print(from + ":")
 			fmt.Println(txt)
-		case cmd.RELOAD:
-			err := this.onReload(txt)
-			msg := ""
-			if err != nil {
-				msg = cmd.Print(this.info.Id, from, err.Error())
-			} else {
-				msg = cmd.Print(this.info.Id, from, "reload succeed!")
-			}
-			this.PublishMsg(msg)
 		default:
 			// not shellcmd
 			this.onDefaultShell(channel, msg)
@@ -68,12 +59,6 @@ func (this *GoNode) onShell(channel string, msg string) {
 
 func (this *GoNode) onDefaultShell(channel string, msg string) {
 	this.behavior.OnShell(channel, msg)
-}
-
-func (this *GoNode) onReload(tag string) error {
-	this.autoRecover()
-	this.logger.Info(this.sprinfLog("node reloading..."))
-	return this.behavior.OnReload(tag)
 }
 
 func (this *GoNode) getNodeStatusInfo() string {

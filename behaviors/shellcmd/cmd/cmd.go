@@ -10,7 +10,6 @@ const (
 	NEWNODE string = "newnode"
 	PRINT   string = "print"
 	STATUS  string = "status"
-	RELOAD  string = "reload"
 )
 
 // 新节点上报
@@ -26,11 +25,6 @@ func Print(from string, to string, txt string) string {
 // 获取目标节点的链接信息
 func Status(from string, to string) string {
 	return sprinf(STATUS, from, to, "..")
-}
-
-// 目标节点重新加载程序集(热更新)
-func Reload(from string, to string) string {
-	return sprinf(RELOAD, from, to, "..")
 }
 
 func sprinf(cmdstr string, from string, to string, txt string) string {

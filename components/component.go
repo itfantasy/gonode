@@ -11,6 +11,9 @@ const (
 	MySql           = "MySql"
 	MongoDB         = "MongoDB"
 	RabbitMQ        = "RabbitMQ"
+	Kafka           = "Kafka"
+	Nsq             = "Nsq"
+	Etcd            = "Etcd"
 )
 
 type IComponent interface {
