@@ -58,10 +58,4 @@ func main() {
 	}
 	fmt.Println("done!")
 
-	/*
-		files, err := ListDir("D:\\Go", ".txt")
-		fmt.Println(files, err)
-		files, err = WalkDir("E:\\Study", ".pdf")
-		fmt.Println(files, err)
-	*/
 }

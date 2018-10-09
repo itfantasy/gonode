@@ -2,6 +2,7 @@ package args
 
 import (
 	"flag"
+	"strconv"
 )
 
 type ArgParser struct {
@@ -34,4 +35,16 @@ func (this *ArgParser) Get(key string) (string, bool) {
 		return "", false
 	}
 	return *val, true
+}
+
+func (this *ArgParser) GetInt(key string) (int, bool) {
+	strVal, exist := this.Get(key)
+	if !exist {
+		return 0, false
+	}
+	val, err := strconv.Atoi(strVal)
+	if err != nil {
+		return 0, false
+	}
+	return val, true
 }

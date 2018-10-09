@@ -24,7 +24,6 @@ func ListDir(dirPth string, suffix string) (files []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//PthSep := string(os.PathSeparator)
 	suffix = strings.ToUpper(suffix)
 	for _, fi := range dir {
 		if fi.IsDir() {
