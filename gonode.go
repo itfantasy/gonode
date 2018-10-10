@@ -58,6 +58,10 @@ func Error(msg string) {
 
 // -------------- init ----------------
 
+func (this *GoNode) Bind(behavior gen_server.GenServer) {
+	this.behavior = behavior
+}
+
 func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
