@@ -1,6 +1,6 @@
 ## 3rdParty
 
-- [golang/net](https://github.com/golang/net) - Go supplementary network libraries
+- [golang/net](https://github.com/golang/net) - Go supplementary network libraries https://godoc.org/golang.org/x/net
 
 - [kcp-go](https://github.com/xtaci/kcp-go) - A Production-Grade Reliable-UDP Library for golang
 
@@ -17,5 +17,7 @@
 - [otto](https://github.com/robertkrimen/otto) - A JavaScript interpreter in Go (golang)
 
 - [json-iterator/go](https://github.com/json-iterator/go) - A high-performance 100% compatible drop-in replacement of "encoding/json"
+
+- [json-iterator/go](https:github.com/templexxx/xor) - XOR in Go, more than 70GB/s per core (for kcp-go on linux)
 
 
