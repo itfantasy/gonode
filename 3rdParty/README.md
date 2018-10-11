@@ -18,6 +18,6 @@
 
 - [json-iterator/go](https://github.com/json-iterator/go) - A high-performance 100% compatible drop-in replacement of "encoding/json"
 
-- [json-iterator/go](https:github.com/templexxx/xor) - XOR in Go, more than 70GB/s per core (for kcp-go on linux)
+- [xor](https:github.com/templexxx/xor) - XOR in Go, more than 70GB/s per core (for kcp-go on linux)
 
 
