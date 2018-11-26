@@ -14,6 +14,14 @@ func (this *CompOptions) Set(key string, val interface{}) {
 	this.options[key] = val
 }
 
+func (this *CompOptions) Get(key string) interface{} {
+	val, exist := this.options[key]
+	if !exist {
+		return nil
+	}
+	return val
+}
+
 func (this *CompOptions) GetBool(key string) bool {
 	val, exist := this.options[key]
 	if !exist {
