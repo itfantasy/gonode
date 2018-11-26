@@ -1,6 +1,7 @@
 package components
 
 import (
+	"github.com/itfantasy/gonode/components/etcd"
 	"github.com/itfantasy/gonode/components/mysql"
 	"github.com/itfantasy/gonode/components/rabbitmq"
 	"github.com/itfantasy/gonode/components/redis"
@@ -33,4 +34,8 @@ func NewMySql() *mysql.MySql {
 
 func NewRabbitMQ() *rabbitmq.RabbitMQ {
 	return rabbitmq.NewRabbitMQ()
+}
+
+func NewEtcd() *etcd.Etcd {
+	return etcd.NewEtcd()
 }
