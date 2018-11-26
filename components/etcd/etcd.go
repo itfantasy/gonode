@@ -30,14 +30,10 @@ func NewEtcd() *Etcd {
 	return this
 }
 
-func (this *Etcd) Conn(url string, others string) error {
-	otherUrls := make([]string, 0)
-	if others != "" {
-		otherUrls = strings.Split(others, ";")
-	}
-	endpoints := make([]string, 0, len(otherUrls)+1)
-	endpoints = append(endpoints, url)
-	for _, v := range otherUrls {
+func (this *Etcd) Conn(urls string, other string) error {
+	urlInfos := strings.Split(urls, ";")
+	endpoints := make([]string, 0, len(urlInfos))
+	for _, v := range urlInfos {
 		endpoints = append(endpoints, v)
 	}
 	cli, err := clientv3.New(clientv3.Config{
@@ -92,7 +88,7 @@ func (this *Etcd) Get(key string) (string, error) {
 }
 
 func (this *Etcd) Subscribe(key string) {
-	ch := this.cli.Watch(context.Background(), key)
+	ch := this.cli.Watch(context.Background(), key, clientv3.WithPrefix())
 	this.subscriber.OnSubscribe(key)
 	for resp := range ch {
 		for _, ev := range resp.Events {
