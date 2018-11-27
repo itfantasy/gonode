@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/itfantasy/gonode/behaviors/cmd"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/behaviors/shellcmd/cmd"
 	"github.com/itfantasy/gonode/components/logger"
 	"github.com/itfantasy/gonode/components/redis"
 	"github.com/itfantasy/gonode/nets"
