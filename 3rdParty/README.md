@@ -18,6 +18,8 @@
 
 - [json-iterator/go](https://github.com/json-iterator/go) - A high-performance 100% compatible drop-in replacement of "encoding/json"
 
+- [yaml.v2](https://gopkg.in/yaml.v2) - Package yaml implements YAML support for the Go language.
+
 - [xor](https:github.com/templexxx/xor) - XOR in Go, more than 70GB/s per core (for kcp-go on linux)
 
 
