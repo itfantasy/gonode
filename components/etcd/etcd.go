@@ -20,6 +20,7 @@ type Etcd struct {
 	cli        *clientv3.Client
 	subscriber pubsub.ISubscriber
 	opts       *etc.CompOptions
+	root       string
 }
 
 func NewEtcd() *Etcd {
@@ -30,7 +31,7 @@ func NewEtcd() *Etcd {
 	return this
 }
 
-func (this *Etcd) Conn(urls string, other string) error {
+func (this *Etcd) Conn(urls string, root string) error {
 	urlInfos := strings.Split(urls, ";")
 	endpoints := make([]string, 0, len(urlInfos))
 	for _, v := range urlInfos {
@@ -44,6 +45,7 @@ func (this *Etcd) Conn(urls string, other string) error {
 		return err
 	}
 	this.cli = cli
+	this.root = root
 	return nil
 }
 
@@ -62,6 +64,9 @@ func (this *Etcd) SetOption(key string, val string) {
 }
 
 func (this *Etcd) Set(key string, val string) error {
+	if this.root != "" {
+		key = this.root + "/" + key
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
 	_, err := this.cli.Put(ctx, key, val)
 	cancel()
@@ -72,6 +77,9 @@ func (this *Etcd) Set(key string, val string) error {
 }
 
 func (this *Etcd) Get(key string) (string, error) {
+	if this.root != "" {
+		key = this.root + "/" + key
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
 	resp, err := this.cli.Get(ctx, key)
 	cancel()
@@ -88,6 +96,9 @@ func (this *Etcd) Get(key string) (string, error) {
 }
 
 func (this *Etcd) Subscribe(key string) {
+	if this.root != "" {
+		key = this.root + "/" + key
+	}
 	ch := this.cli.Watch(context.Background(), key, clientv3.WithPrefix())
 	this.subscriber.OnSubscribe(key)
 	for resp := range ch {

@@ -54,3 +54,16 @@ func WalkDir(dirPth, suffix string) (files []string, err error) {
 	})
 	return files, err
 }
+
+func LoadFile(filePath string) (string, error) {
+	bytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+func SaveFile(filePath string, content string) error {
+	data := []byte(content)
+	return ioutil.WriteFile(filePath, data, 0644)
+}

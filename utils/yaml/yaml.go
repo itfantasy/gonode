@@ -1,6 +1,8 @@
 package yaml
 
 import (
+	"fmt"
+
 	"github.com/itfantasy/gonode/utils/stl"
 	_yaml "gopkg.in/yaml.v2"
 )
@@ -32,4 +34,13 @@ func ToList(str string, capacity int) (*stl.List, error) {
 		return nil, err
 	}
 	return stl.NewListRaw(ret), nil
+}
+
+func Println(obj interface{}) {
+	ret, err := Encode(obj)
+	if err != nil {
+		fmt.Println("ERROR Data...")
+	} else {
+		fmt.Println(ret)
+	}
 }
