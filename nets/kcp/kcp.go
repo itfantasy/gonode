@@ -17,8 +17,8 @@ type KcpNetWorker struct {
 }
 
 func (this *KcpNetWorker) Listen(url string) error {
-	this.initKvvk()
-	go this.autoPing()
+	nets.InitKvvk()
+	go nets.AutoPing(this)
 
 	url = strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
@@ -47,7 +47,7 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 			break
 		}
 		if n > 0 {
-			id, exists := this.getInfoIdByConn(conn)
+			id, exists := nets.GetInfoIdByConn(conn)
 			var temp []byte = make([]byte, 0, n)
 			datas := bytes.NewBuffer(temp)
 			datas.Write(buf[0:n])
@@ -66,7 +66,7 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 }
 
 func (this *KcpNetWorker) Connect(url string, origin string) error {
-	this.initKvvk()
+	nets.InitKvvk()
 
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
@@ -79,26 +79,17 @@ func (this *KcpNetWorker) Connect(url string, origin string) error {
 	return err
 }
 
-func (this *KcpNetWorker) Send(id string, msg []byte) error {
+func (this *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	defer func() {
 		msg = nil // dispose the send buffer
 	}()
-	conn, exist := this.getInfoConnById(id)
-	if exist {
-		_, err := conn.Write(msg)
-		return err
-	} else {
-		return errors.New("there is not the conn for this id in local record!")
-	}
-}
-
-func (this *KcpNetWorker) SendAsync(id string, msg []byte) {
-	go this.Send(id, msg)
+	_, err := conn.Write(msg)
+	return err
 }
 
 func (this *KcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
-	err := this.addConnInfo(id, conn)
+	err := nets.AddConnInfo(id, nets.KCP, conn)
 	if err != nil {
 		this.onError(conn, err)
 	} else {
@@ -107,7 +98,7 @@ func (this *KcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
-	this.resetConnState(id)
+	nets.ResetConnState(id)
 	if msg[0] == 35 { // '#'
 		strmsg := string(msg)
 		if strmsg == "#pong" {
@@ -115,7 +106,7 @@ func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 			return
 		} else if strmsg == "#ping" {
 			fmt.Println("re sending pong to..." + id)
-			this.SendAsync(id, []byte("#pong")) // return the pong pck
+			go this.Send(conn, []byte("#pong")) // return the pong pck
 			return
 		}
 	}
@@ -123,17 +114,17 @@ func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 }
 
 func (this *KcpNetWorker) onClose(conn net.Conn) {
-	id, exists := this.getInfoIdByConn(conn)
+	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
 		this.eventListener.OnClose(id)
-		this.removeConnInfo(id) // remove the closed conn from local record
+		nets.RemoveConnInfo(id) // remove the closed conn from local record
 		conn.Close()
 	}
 }
 
 func (this *KcpNetWorker) onError(conn net.Conn, err error) {
 	if conn != nil {
-		id, exists := this.getInfoIdByConn(conn)
+		id, exists := nets.GetInfoIdByConn(conn)
 		if exists {
 			this.eventListener.OnError(id, err)
 			this.onClose(conn) // close the conn with errors
@@ -154,14 +145,10 @@ func (this *KcpNetWorker) BindEventListener(eventListener nets.INetEventListener
 	return errors.New("this net worker has binded an event listener!!")
 }
 
-func (this *KcpNetWorker) Close(id string) error {
-	conn, exists := this.getInfoConnById(id)
-	if exists {
-		this.eventListener.OnClose(id)
-		this.removeConnInfo(id) // remove the closed conn from local record
-		return conn.Close()
-	}
-	return errors.New("there is not the id in local record!")
+func (this *KcpNetWorker) Close(id string, conn net.Conn) error {
+	this.eventListener.OnClose(id)
+	nets.RemoveConnInfo(id) // remove the closed conn from local record
+	return conn.Close()
 }
 
 func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string) error {

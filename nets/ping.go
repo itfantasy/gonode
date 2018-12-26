@@ -1,8 +1,10 @@
-package kcp
+package nets
 
 import (
 	"fmt"
 	"sync"
+
+	"net"
 
 	"github.com/itfantasy/gonode/utils/timer"
 	"github.com/itfantasy/gonode/utils/ts"
@@ -15,6 +17,8 @@ use a pingpong package to check if the kcpconn is alive
 */
 
 type ConnState struct {
+	id   string
+	conn net.Conn
 	ping bool  // if has sended a ping pck
 	ts   int64 // the ts of the last recivingmsg
 }
@@ -22,50 +26,56 @@ type ConnState struct {
 var connStates map[string]*ConnState
 var stateLock sync.RWMutex
 
-func (this *KcpNetWorker) initStates() {
+func initStates() {
 	connStates = make(map[string]*ConnState)
 }
 
-func (this *KcpNetWorker) autoPing() {
-	dirtyIds := make([]string, 0, 100)
+func AutoPing(netWorker INetWorker) {
+	dirtyStates := make([]*ConnState, 0, 100)
 	for {
 		ms := ts.MS()
 		timer.Sleep(2000)
 		stateLock.Lock()
 		for id, state := range connStates {
 			if state.ping {
-				dirtyIds = append(dirtyIds, id)
+				dirtyStates = append(dirtyStates, state)
 				fmt.Println("conn time out.." + id)
 			} else if ms-state.ts > 2000 {
 				fmt.Println("sending a ping to..." + id)
-				this.SendAsync(id, []byte("#ping"))
+				go netWorker.Send(state.conn, []byte("#ping"))
 				state.ping = true
 			}
 			timer.Sleep(10)
 		}
 		stateLock.Unlock()
-		for _, dirtyId := range dirtyIds {
-			this.Close(dirtyId)
+		for _, state := range dirtyStates {
+			netWorker.Close(state.id, state.conn)
 		}
-		dirtyIds = dirtyIds[0:0]
+		dirtyStates = dirtyStates[0:0]
 	}
 }
 
-func (this *KcpNetWorker) newConnState(id string) {
+func newConnState(id string, conn net.Conn) {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 
-	connStates[id] = new(ConnState)
+	state := new(ConnState)
+	state.id = id
+	state.conn = conn
+	connStates[state.id] = state
 }
 
-func (this *KcpNetWorker) disposeConnState(id string) {
+func disposeConnState(id string) {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 
-	delete(connStates, id)
+	_, exist := connStates[id]
+	if exist {
+		delete(connStates, id)
+	}
 }
 
-func (this *KcpNetWorker) resetConnState(id string) {
+func ResetConnState(id string) {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 

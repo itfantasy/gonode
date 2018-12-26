@@ -1,4 +1,4 @@
-package tcp
+package nets
 
 import (
 	"errors"
@@ -8,22 +8,37 @@ import (
 )
 
 type ConnInfos struct {
-	kv   map[string]net.Conn
+	kv   map[string]*connItemInfo
 	vk   map[net.Conn]string
 	LOCK sync.RWMutex
 }
 
-var connInfos *ConnInfos
-
-func (this *TcpNetWorker) initKvvk() {
-	if connInfos == nil {
-		connInfos = new(ConnInfos)
-		connInfos.kv = make(map[string]net.Conn)
-		connInfos.vk = make(map[net.Conn]string)
-	}
+type connItemInfo struct {
+	id    string
+	proto string
+	conn  net.Conn
 }
 
-func (this *TcpNetWorker) addConnInfo(id string, conn net.Conn) error {
+func newConnItemInfo(id string, proto string, conn net.Conn) *connItemInfo {
+	this := new(connItemInfo)
+	this.id = id
+	this.proto = proto
+	this.conn = conn
+	return this
+}
+
+var connInfos *ConnInfos
+
+func InitKvvk() {
+	if connInfos == nil {
+		connInfos = new(ConnInfos)
+		connInfos.kv = make(map[string]*connItemInfo)
+		connInfos.vk = make(map[net.Conn]string)
+	}
+	initStates()
+}
+
+func AddConnInfo(id string, proto string, conn net.Conn) error {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -32,29 +47,32 @@ func (this *TcpNetWorker) addConnInfo(id string, conn net.Conn) error {
 	if ok || ok2 {
 		return errors.New("a same conn info has existed!")
 	}
-	connInfos.kv[id] = conn
+	connInfos.kv[id] = newConnItemInfo(id, proto, conn)
 	connInfos.vk[conn] = id
 
+	if proto == KCP || proto == TCP {
+		newConnState(id, conn)
+	}
 	return nil
 }
 
-func (this *TcpNetWorker) removeConnInfo(id string) {
-	conn, ok := connInfos.kv[id]
-	_, ok2 := connInfos.vk[conn]
+func RemoveConnInfo(id string) {
+	info, ok := connInfos.kv[id]
+	_, ok2 := connInfos.vk[info.conn]
 
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	if ok {
+		disposeConnState(id)
 		delete(connInfos.kv, id)
 	}
 	if ok2 {
-		delete(connInfos.vk, conn)
+		delete(connInfos.vk, info.conn)
 	}
-
 }
 
-func (this *TcpNetWorker) getInfoIdByConn(conn net.Conn) (string, bool) {
+func GetInfoIdByConn(conn net.Conn) (string, bool) {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -62,15 +80,19 @@ func (this *TcpNetWorker) getInfoIdByConn(conn net.Conn) (string, bool) {
 	return val, exist
 }
 
-func (this *TcpNetWorker) getInfoConnById(id string) (net.Conn, bool) {
+func GetInfoConnById(id string) (net.Conn, string, bool) {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	val, exist := connInfos.kv[id]
-	return val, exist
+	if exist {
+		return val.conn, val.proto, exist
+	} else {
+		return nil, "", false
+	}
 }
 
-func (this *TcpNetWorker) GetAllConnIds() []string {
+func GetAllConnIds() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -82,7 +104,10 @@ func (this *TcpNetWorker) GetAllConnIds() []string {
 	return sorted_keys
 }
 
-func (this *TcpNetWorker) IsIdExists(id string) bool {
-	_, exists := this.getInfoConnById(id)
-	return exists
+func IsIdExists(id string) bool {
+	connInfos.LOCK.Lock()
+	defer connInfos.LOCK.Unlock()
+
+	_, exist := connInfos.kv[id]
+	return exist
 }

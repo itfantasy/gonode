@@ -7,6 +7,7 @@ import (
 
 	"github.com/itfantasy/gonode/nets"
 	"golang.org/x/net/websocket"
+	"net"
 )
 
 type WSNetWorker struct {
@@ -14,7 +15,7 @@ type WSNetWorker struct {
 }
 
 func (this *WSNetWorker) Listen(url string) error {
-	this.initKvvk()
+	nets.InitKvvk()
 	url = strings.Trim(url, "ws://") // trim the ws header
 	infos := strings.Split(url, "/") // parse the sub path
 	http.Handle("/"+infos[1], websocket.Handler(this.h_webSocket))
@@ -42,7 +43,7 @@ func (this *WSNetWorker) h_webSocket(conn *websocket.Conn) {
 }
 
 func (this *WSNetWorker) Connect(url string, origin string) error {
-	this.initKvvk()
+	nets.InitKvvk()
 	conn, err := websocket.Dial(url, "tcp", origin)
 	if err == nil {
 		go this.h_webSocket(conn)
@@ -50,26 +51,17 @@ func (this *WSNetWorker) Connect(url string, origin string) error {
 	return err
 }
 
-func (this *WSNetWorker) Send(id string, msg []byte) error {
+func (this *WSNetWorker) Send(conn net.Conn, msg []byte) error {
 	defer func() {
 		msg = nil // dispose the send buffer
 	}()
-	conn, exist := this.getInfoConnById(id)
-	if exist {
-		err := websocket.Message.Send(conn, msg)
-		return err
-	} else {
-		return errors.New("there is not the conn for this id in local record!")
-	}
-}
-
-func (this *WSNetWorker) SendAsync(id string, msg []byte) {
-	go this.Send(id, msg)
+	err := websocket.Message.Send(conn.(*websocket.Conn), msg)
+	return err
 }
 
 func (this *WSNetWorker) onConn(conn *websocket.Conn, id string) {
 	// record the set from id to conn
-	err := this.addConnInfo(id, conn)
+	err := nets.AddConnInfo(id, nets.WS, conn)
 	if err != nil {
 		this.onError(conn, err)
 	} else {
@@ -78,23 +70,23 @@ func (this *WSNetWorker) onConn(conn *websocket.Conn, id string) {
 }
 
 func (this *WSNetWorker) onMsg(conn *websocket.Conn, msg []byte) {
-	id, exists := this.getInfoIdByConn(conn)
+	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
 		this.eventListener.OnMsg(id, msg)
 	}
 }
 
 func (this *WSNetWorker) onClose(conn *websocket.Conn) {
-	id, exists := this.getInfoIdByConn(conn)
+	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
 		this.eventListener.OnClose(id)
-		this.removeConnInfo(id) // remove the closed conn from local record
+		nets.RemoveConnInfo(id) // remove the closed conn from local record
 		conn.Close()
 	}
 }
 
 func (this *WSNetWorker) onError(conn *websocket.Conn, err error) {
-	id, exists := this.getInfoIdByConn(conn)
+	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
 		this.eventListener.OnError(id, err)
 		this.onClose(conn) // close the conn with errors
@@ -109,12 +101,8 @@ func (this *WSNetWorker) BindEventListener(eventListener nets.INetEventListener)
 	return errors.New("this net worker has binded an event listener!!")
 }
 
-func (this *WSNetWorker) Close(id string) error {
-	conn, exists := this.getInfoConnById(id)
-	if exists {
-		this.eventListener.OnClose(id)
-		this.removeConnInfo(id) // remove the closed conn from local record
-		return conn.Close()
-	}
-	return errors.New("there is not the id in local record!")
+func (this *WSNetWorker) Close(id string, conn net.Conn) error {
+	this.eventListener.OnClose(id)
+	nets.RemoveConnInfo(id) // remove the closed conn from local record
+	return conn.Close()
 }

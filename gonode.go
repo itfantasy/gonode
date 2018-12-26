@@ -1,6 +1,7 @@
 package gonode
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -20,12 +21,12 @@ import (
 )
 
 type GoNode struct {
-	info      *gen_server.NodeInfo
-	behavior  gen_server.GenServer
-	logger    *logger.Logger
-	coreRedis *redis.Redis
-	netWorker nets.INetWorker
-	lock      sync.RWMutex
+	info       *gen_server.NodeInfo
+	behavior   gen_server.GenServer
+	logger     *logger.Logger
+	coreRedis  *redis.Redis
+	netWorkers map[string]nets.INetWorker
+	lock       sync.RWMutex
 }
 
 var node *GoNode = nil
@@ -38,7 +39,7 @@ func Node() *GoNode {
 }
 
 func Send(id string, msg []byte) {
-	Node().NetWorker().Send(id, msg)
+	Node().Send(id, msg)
 }
 
 func Log(msg string) {
@@ -87,14 +88,9 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.coreRedis.BindSubscriber(this)
 	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
 
-	// init the networker
-	if err := this.initNetWorker(); err != nil {
-		this.logger.Error(this.sprinfLog(err.Error()))
-		return
-	}
 	// register self info to core redis
 	this.registerSelf()
-	go this.netWorker.Listen(this.info.Url)
+	go this.listen(this.info.Url)
 
 	// check if auto detect
 	if this.info.AutoDetect {
@@ -104,20 +100,6 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.behavior.Start()
 	select {}
 	this.logger.Error("shuting down!!!")
-}
-
-func (this *GoNode) initNetWorker() error {
-	url := this.info.Url
-	infos := strings.Split(url, "://") // get the header of protocol
-	switch infos[0] {
-	case (string)(nets.WS):
-		this.netWorker = new(ws.WSNetWorker)
-		break
-	case (string)(nets.KCP):
-		this.netWorker = new(kcp.KcpNetWorker)
-		break
-	}
-	return this.netWorker.BindEventListener(this)
 }
 
 // -------------- info --------------------
@@ -154,8 +136,51 @@ func (this *GoNode) OnSubError(channel string, err error) {
 
 // -------------- net ------------------
 
-func (this *GoNode) NetWorker() nets.INetWorker {
-	return this.netWorker
+func (this *GoNode) netWorker(url string) nets.INetWorker {
+	if this.netWorkers == nil {
+		this.netWorkers = make(map[string]nets.INetWorker)
+	}
+	infos := strings.Split(url, "://") // get the header of protocol
+	proto := infos[0]
+	_, exists := this.netWorkers[proto]
+	if !exists {
+		switch proto {
+		case (string)(nets.WS):
+			this.netWorkers[proto] = new(ws.WSNetWorker)
+			break
+		case (string)(nets.KCP):
+			this.netWorkers[proto] = new(kcp.KcpNetWorker)
+			break
+		}
+		this.netWorkers[proto].BindEventListener(this)
+	} else {
+		this.logger.Warn(this.sprinfLog("there has been a same proto networker!" + proto))
+	}
+	return this.netWorkers[proto]
+}
+
+func (this *GoNode) listen(url string) error {
+	return this.netWorker(url).Listen(url)
+}
+
+func (this *GoNode) connnect(url string, origin string) error {
+	return this.netWorker(url).Connect(url, origin)
+}
+
+func (this *GoNode) Send(id string, msg []byte) error {
+	conn, proto, exist := nets.GetInfoConnById(id)
+	if !exist {
+		return errors.New("there is not the id in local record!")
+	}
+	netWorker, exist := this.netWorkers[proto]
+	if !exist {
+		return errors.New("illegal proto!")
+	}
+	return netWorker.Send(conn, msg)
+}
+
+func (this *GoNode) GetAllConnIds() []string {
+	return nets.GetAllConnIds()
 }
 
 func (this *GoNode) getNodeInfo(url string) (*gen_server.NodeInfo, error) {
@@ -184,7 +209,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 			return connId, true
 		}
 	} else {
-		exist := this.netWorker.IsIdExists(info.Id)
+		exist := nets.IsIdExists(info.Id)
 		if exist {
 			this.logger.Info(this.sprinfLog("there is a same id in local record:" + url + "|" + info.Id))
 			return "", false
@@ -216,7 +241,7 @@ func (this *GoNode) checkNewNode(id string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	exist := this.netWorker.IsIdExists(id)
+	exist := nets.IsIdExists(id)
 	if !exist {
 		// check the local node is interested in the new node
 		if this.behavior.OnDetect(id) {
@@ -224,7 +249,7 @@ func (this *GoNode) checkNewNode(id string) {
 			// find the node url by the id
 			url, err := this.getNodeUrlById(id)
 			if err == nil {
-				err2 := this.netWorker.Connect(url, this.info.Url)
+				err2 := this.connnect(url, this.info.Url)
 				if err2 != nil {
 					this.logger.Error(this.sprinfLog(err2.Error() + "[" + id + "]"))
 				}

@@ -1,22 +1,19 @@
 package nets
 
+import "net"
+
 type INetWorker interface {
 	Listen(url string) error
 	Connect(url string, origin string) error
-	Send(id string, msg []byte) error
-	SendAsync(id string, msg []byte)
+	Send(conn net.Conn, msg []byte) error
 	BindEventListener(eventListener INetEventListener) error
-	IsIdExists(string) bool
-	GetAllConnIds() []string
-	Close(string) error
+	Close(id string, conn net.Conn) error
 }
 
-type Enum_NetWorkerType string
-
 const (
-	None Enum_NetWorkerType = "none"
-	WS   Enum_NetWorkerType = "ws"
-	TCP  Enum_NetWorkerType = "tcp"
-	KCP  Enum_NetWorkerType = "kcp"
-	HTTP Enum_NetWorkerType = "http"
+	None string = "none"
+	WS   string = "ws"
+	TCP  string = "tcp"
+	KCP  string = "kcp"
+	HTTP string = "http"
 )
