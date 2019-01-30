@@ -22,4 +22,4 @@
 
 - [xor](https:github.com/templexxx/xor) - XOR in Go, more than 70GB/s per core (for kcp-go on linux)
 
-
+- [gorsa](https://github.com/wenzhenxi/gorsa) - GoRSA Encryption and Decryption Library (based on https://github.com/farmerx/gorsa)

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gonode/utils/ini"
-	"gonode/utils/io"
+
+	"github.com/itfantasy/gonode/utils/ini"
+	"github.com/itfantasy/gonode/utils/io"
 
 	"log"
 	"os"

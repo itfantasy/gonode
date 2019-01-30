@@ -76,6 +76,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		return
 	}
 	this.info = info
+
 	// init the core redis
 	this.coreRedis = redis.NewRedis()
 	this.coreRedis.SetAuthor("", this.info.RedAuth)
@@ -90,7 +91,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 
 	// register self info to core redis
 	this.registerSelf()
-	go this.listen(this.info.Url)
+	this.Listen(this.info.Url)
 
 	// check if auto detect
 	if this.info.AutoDetect {
@@ -159,11 +160,16 @@ func (this *GoNode) netWorker(url string) nets.INetWorker {
 	return this.netWorkers[proto]
 }
 
-func (this *GoNode) listen(url string) error {
-	return this.netWorker(url).Listen(url)
+func (this *GoNode) Listen(url string) {
+	go func() {
+		err := this.netWorker(url).Listen(url)
+		if err != nil {
+			this.logger.Error(this.sprinfLog(err.Error()))
+		}
+	}()
 }
 
-func (this *GoNode) connnect(url string, origin string) error {
+func (this *GoNode) Connnect(url string, origin string) error {
 	return this.netWorker(url).Connect(url, origin)
 }
 
@@ -198,10 +204,10 @@ func (this *GoNode) getNodeInfo(url string) (*gen_server.NodeInfo, error) {
 
 func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	// find the node info by redis at first
-	info, err := node.getNodeInfo(url)
+	info, err := this.getNodeInfo(url)
 	if err != nil {
 		// cannot find the node in lan
-		if !node.info.Public {
+		if !this.info.Public {
 			this.logger.Info(this.sprinfLog("not a inside node! give up the url:" + url))
 			return "", false
 		} else {
@@ -249,7 +255,7 @@ func (this *GoNode) checkNewNode(id string) {
 			// find the node url by the id
 			url, err := this.getNodeUrlById(id)
 			if err == nil {
-				err2 := this.connnect(url, this.info.Url)
+				err2 := this.Connnect(url, this.info.Url)
 				if err2 != nil {
 					this.logger.Error(this.sprinfLog(err2.Error() + "[" + id + "]"))
 				}
