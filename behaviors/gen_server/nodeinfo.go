@@ -9,6 +9,7 @@ type NodeInfo struct {
 	BackEnds   string
 	Public     bool
 	PubUrls    string
+	UserDatas  map[string]string
 
 	RedUrl  string // the core redis url
 	RedPool int    // max conn num of redis
