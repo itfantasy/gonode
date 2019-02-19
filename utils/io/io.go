@@ -67,3 +67,7 @@ func SaveFile(filePath string, content string) error {
 	data := []byte(content)
 	return ioutil.WriteFile(filePath, data, 0644)
 }
+
+func DeleteFile(filePath string) error {
+	return os.Remove(filePath)
+}
