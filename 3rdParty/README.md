@@ -14,6 +14,8 @@
 
 - [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) - Go MySQL Driver is a MySQL driver for Go's (golang) database/sql package
 
+- [log4go](https://github.com/jeanphorn/log4go) - a logging package for golang similar to log4j or log4c++ supporting console, file and network.
+
 - [otto](https://github.com/robertkrimen/otto) - A JavaScript interpreter in Go (golang)
 
 - [json-iterator/go](https://github.com/json-iterator/go) - A high-performance 100% compatible drop-in replacement of "encoding/json"

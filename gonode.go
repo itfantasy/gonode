@@ -70,7 +70,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.logger = new(logger.Logger)
 	// get the node self info config
 	this.behavior = behavior
-	info, err := this.behavior.SelfInfo()
+	info, err := this.behavior.Setup()
 	if err != nil {
 		this.logger.Error("get the node self info err!" + err.Error())
 		return

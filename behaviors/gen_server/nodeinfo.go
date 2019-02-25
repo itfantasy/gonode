@@ -18,5 +18,7 @@ type NodeInfo struct {
 }
 
 func NewNodeInfo() *NodeInfo {
-	return new(NodeInfo)
+	info := new(NodeInfo)
+	info.UserDatas = make(map[string]string)
+	return info
 }
