@@ -39,7 +39,7 @@ func (this *GoNode) onShell(channel string, msg string) {
 
 		switch cmdstr {
 		case cmd.NEWNODE:
-			this.logger.Info(this.sprinfLog("reive an new this cmd:" + from))
+			this.logger.Info("reive an new this cmd:" + from)
 			this.checkNewNode(from)
 		case cmd.STATUS:
 			msg := cmd.Print(this.info.Id, from, this.getNodeStatusInfo())

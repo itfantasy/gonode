@@ -71,3 +71,14 @@ func SaveFile(filePath string, content string) error {
 func DeleteFile(filePath string) error {
 	return os.Remove(filePath)
 }
+
+func FileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}

@@ -18,12 +18,14 @@ import (
 	"github.com/itfantasy/gonode/nets/ws"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
+
+	log "github.com/jeanphorn/log4go"
 )
 
 type GoNode struct {
 	info       *gen_server.NodeInfo
 	behavior   gen_server.GenServer
-	logger     *logger.Logger
+	logger     *log.Filter
 	coreRedis  *redis.Redis
 	netWorkers map[string]nets.INetWorker
 	lock       sync.RWMutex
@@ -42,19 +44,23 @@ func Send(id string, msg []byte) {
 	Node().Send(id, msg)
 }
 
+func Logger() *log.Filter {
+	return Node().Logger()
+}
+
 func Log(msg string) {
-	Node().Logger().Info(Node().sprinfLog(msg))
+	Logger().Debug(msg)
 }
 
 func Console(obj interface{}) {
 	msg, err := json.Encode(obj)
 	if err != nil {
-		Node().Logger().Debug(Node().sprinfLog(msg))
+		Log(msg)
 	}
 }
 
 func Error(msg string) {
-	Node().Logger().Error(Node().sprinfLog(msg))
+	Logger().Error(msg)
 }
 
 // -------------- init ----------------
@@ -64,10 +70,11 @@ func (this *GoNode) Bind(behavior gen_server.GenServer) {
 }
 
 func (this *GoNode) Initialize(behavior gen_server.GenServer) {
+
+	defer this.Dispose()
+
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	// init the logger
-	this.logger = new(logger.Logger)
 	// get the node self info config
 	this.behavior = behavior
 	info, err := this.behavior.Setup()
@@ -76,13 +83,15 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		return
 	}
 	this.info = info
+	// init the logger
+	this.logger = logger.NewLogger(this.info.Id)
 
 	// init the core redis
 	this.coreRedis = redis.NewRedis()
 	this.coreRedis.SetAuthor("", this.info.RedAuth)
 	this.coreRedis.SetOption(redis.OPT_MAXPOOL, this.info.RedPool)
 	if err := this.coreRedis.Conn(this.info.RedUrl, strconv.Itoa(this.info.RedDB)); err != nil {
-		this.logger.Error(this.sprinfLog("cannot connect to the core redis!!"))
+		this.logger.Error("cannot connect to the core redis!!")
 		return
 	}
 	// sub the redis channel
@@ -101,6 +110,10 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.behavior.Start()
 	select {}
 	this.logger.Error("shuting down!!!")
+}
+
+func (this *GoNode) Dispose() {
+
 }
 
 // -------------- info --------------------
@@ -132,7 +145,7 @@ func (this *GoNode) OnSubMessage(channel string, msg string) {
 }
 
 func (this *GoNode) OnSubError(channel string, err error) {
-	this.logger.Error(this.sprinfLog(err.Error()))
+	this.logger.Error(err.Error())
 }
 
 // -------------- net ------------------
@@ -155,7 +168,7 @@ func (this *GoNode) netWorker(url string) nets.INetWorker {
 		}
 		this.netWorkers[proto].BindEventListener(this)
 	} else {
-		this.logger.Warn(this.sprinfLog("there has been a same proto networker!" + proto))
+		this.logger.Warn("there has been a same proto networker!" + proto)
 	}
 	return this.netWorkers[proto]
 }
@@ -164,7 +177,7 @@ func (this *GoNode) Listen(url string) {
 	go func() {
 		err := this.netWorker(url).Listen(url)
 		if err != nil {
-			this.logger.Error(this.sprinfLog(err.Error()))
+			this.logger.Error(err.Error())
 		}
 	}()
 }
@@ -208,7 +221,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	if err != nil {
 		// cannot find the node in lan
 		if !this.info.Public {
-			this.logger.Info(this.sprinfLog("not a inside node! give up the url:" + url))
+			this.logger.Info("not a inside node! give up the url:" + url)
 			return "", false
 		} else {
 			connId := this.behavior.OnRanId()
@@ -217,7 +230,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	} else {
 		exist := nets.IsIdExists(info.Id)
 		if exist {
-			this.logger.Info(this.sprinfLog("there is a same id in local record:" + url + "|" + info.Id))
+			this.logger.Info("there is a same id in local record:" + url + "|" + info.Id)
 			return "", false
 		}
 		return info.Id, true
@@ -251,16 +264,16 @@ func (this *GoNode) checkNewNode(id string) {
 	if !exist {
 		// check the local node is interested in the new node
 		if this.behavior.OnDetect(id) {
-			this.logger.Info(this.sprinfLog("a new node has been found![" + id + "]"))
+			this.logger.Info("a new node has been found!", id)
 			// find the node url by the id
 			url, err := this.getNodeUrlById(id)
 			if err == nil {
 				err2 := this.Connnect(url, this.info.Url)
 				if err2 != nil {
-					this.logger.Error(this.sprinfLog(err2.Error() + "[" + id + "]"))
+					this.logger.Error(err2.Error() + "[" + id + "]")
 				}
 			} else {
-				this.logger.Error(this.sprinfLog(err.Error() + "[" + id + "]"))
+				this.logger.Error(err.Error() + "[" + id + "]")
 			}
 		}
 	}
@@ -274,7 +287,7 @@ func (this *GoNode) getNodeUrlById(id string) (string, error) {
 func (this *GoNode) registerSelf() {
 	infoStr, err := json.Encode(this.info)
 	if err != nil {
-		this.logger.Error(this.sprinfLog(err.Error()))
+		this.logger.Error(err.Error())
 	}
 
 	this.coreRedis.Set("gonode_"+this.info.Id, this.info.Url)
@@ -284,7 +297,7 @@ func (this *GoNode) registerSelf() {
 	msg := cmd.NewNode(this.info.Id)
 	this.PublishMsg(msg)
 
-	this.logger.Info(this.sprinfLog("report the node info:" + msg))
+	this.logger.Info("report the node info:" + msg)
 }
 
 // -------------- redis --------------------
@@ -295,18 +308,14 @@ func (this *GoNode) CoreRedis() *redis.Redis {
 
 // -------------- logger -------------------
 
-func (this *GoNode) Logger() *logger.Logger {
+func (this *GoNode) Logger() *log.Filter {
 	return this.logger
 }
 
-func (this *GoNode) ReportLog(msg string) {
-	// report the log by the redis comp
-	this.coreRedis.Publish(GONODE_LOG_CHAN, msg)
-}
-
-func (this *GoNode) sprinfLog(log string) string {
-	return fmt.Sprintf("[%s]--%s", this.info.Id, log)
-}
+//func (this *GoNode) ReportLog(msg string) {
+//	// report the log by the redis comp
+//	this.coreRedis.Publish(GONODE_LOG_CHAN, msg)
+//}
 
 // -------------- other ----------------
 

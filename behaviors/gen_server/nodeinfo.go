@@ -8,7 +8,8 @@ type NodeInfo struct {
 	AutoDetect bool   // is auto detecting
 	BackEnds   string
 	Public     bool
-	PubUrls    string
+	PubUrl     string
+	LogConf    string
 	UserDatas  map[string]string
 
 	RedUrl  string // the core redis url

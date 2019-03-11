@@ -2,85 +2,71 @@ package logger
 
 import (
 	"fmt"
+
+	"github.com/itfantasy/gonode/utils/io"
+	log "github.com/jeanphorn/log4go"
 )
 
-type Logger struct {
-	level       Enum_LogLevels
-	netReporter INetReporter
-}
+var configed bool = false
 
-// the log levels
-type Enum_LogLevels int
-
-const (
-	ALL Enum_LogLevels = iota
-	DEBUG
-	INFO
-	WARN
-	ERROR
-	FATAL
-	OFF
-)
-
-func (this *Logger) SetLevel(level Enum_LogLevels) {
-	this.level = level
-}
-
-func (this *Logger) Level() Enum_LogLevels {
-	return this.level
-}
-
-func (this *Logger) SetNetReporter(netReporter INetReporter) {
-	this.netReporter = netReporter
-}
-
-func (this *Logger) Log(level Enum_LogLevels, msg string) {
-	if this.level > level {
-		return
+func LoadConfig(filePath string) {
+	if filePath != "" {
+		b, _ := io.FileExists(filePath)
+		if b {
+			log.LoadConfiguration(filePath)
+		} else {
+			autoConfig()
+		}
+	} else {
+		autoConfig()
 	}
-	txt := this.levelToString(level) + msg
-	fmt.Println(txt)
-	// call io to write log file
-	//....
+	configed = true
+}
 
-	if this.netReporter != nil {
-		// call the interface to report the net log
-		this.netReporter.ReportLog(txt)
+func autoConfig() {
+	fmt.Println("[log4]::begin using a default config...")
+	txt := `{
+    "console": {
+        "enable": true,
+        "level": "DEBUG"
+    },  
+    "files": [{
+        "enable": true,
+        "level": "INFO",
+        "filename":"./test.log",
+        "category": "Test",
+        "pattern": "[%D %T] [%C] [%L] (%S) %M"
+    },{ 
+        "enable": false,
+        "level": "DEBUG",
+        "filename":"rotate_test.log",
+        "category": "TestRotate",
+        "pattern": "[%D %T] [%C] [%L] (%S) %M",
+        "rotate": true,
+        "maxsize": "500M",
+        "maxlines": "10K",
+        "daily": true,
+        "sanitize": true
+    }], 
+    "sockets": [{
+        "enable": false,
+        "level": "DEBUG",
+        "category": "TestSocket",
+        "pattern": "[%D %T] [%C] [%L] (%S) %M",
+        "addr": "127.0.0.1:12124",
+        "protocol":"udp"
+    }]
+}`
+
+	filePath := "./logger.json"
+	io.SaveFile(filePath, txt)
+	log.LoadConfiguration(filePath)
+}
+
+func NewLogger(filter string) *log.Filter {
+	if !configed {
+		autoConfig()
 	}
-}
 
-func (this *Logger) Debug(msg string) {
-	this.Log(DEBUG, msg)
-}
-
-func (this *Logger) Info(msg string) {
-	this.Log(INFO, msg)
-}
-
-func (this *Logger) Warn(msg string) {
-	this.Log(WARN, msg)
-}
-
-func (this *Logger) Error(msg string) {
-	this.Log(ERROR, msg)
-}
-
-func (this *Logger) Fatal(msg string) {
-	this.Log(FATAL, msg)
-}
-
-func (this *Logger) levelToString(level Enum_LogLevels) string {
-	switch level {
-	case DEBUG:
-		return "d:/"
-	case INFO:
-		return "i:/"
-	case WARN:
-		return "w:/"
-	case ERROR:
-		return "e:/"
-	case FATAL:
-		return "f:/"
-	}
-	return ""
+	return log.LOGGER(filter)
 }
