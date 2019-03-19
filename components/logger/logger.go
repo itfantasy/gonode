@@ -1,72 +1,45 @@
 package logger
 
 import (
-	"fmt"
-
-	"github.com/itfantasy/gonode/utils/io"
 	log "github.com/jeanphorn/log4go"
 )
 
-var configed bool = false
+var globalLogger log.Logger
 
-func LoadConfig(filePath string) {
-	if filePath != "" {
-		b, _ := io.FileExists(filePath)
-		if b {
-			log.LoadConfiguration(filePath)
-		} else {
-			autoConfig()
+func NewLogger(id string, loglevel string, rmqurl string, rmqhost string, rmqchan string, rmquser string, rmqpass string) *log.Filter {
+	if rmqurl != "" && rmqhost != "" {
+		globalLogger = log.Logger{
+			id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmqurl, rmqhost, rmqchan, rmquser, rmqpass), id},
 		}
 	} else {
-		autoConfig()
+		globalLogger = log.Logger{
+			id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
+		}
 	}
-	configed = true
+	return globalLogger[id]
 }
 
-func autoConfig() {
-	fmt.Println("[log4]::begin using a default config...")
-	txt := `{
-    "console": {
-        "enable": true,
-        "level": "DEBUG"
-    },  
-    "files": [{
-        "enable": true,
-        "level": "INFO",
-        "filename":"./test.log",
-        "category": "Test",
-        "pattern": "[%D %T] [%C] [%L] (%S) %M"
-    },{ 
-        "enable": false,
-        "level": "DEBUG",
-        "filename":"rotate_test.log",
-        "category": "TestRotate",
-        "pattern": "[%D %T] [%C] [%L] (%S) %M",
-        "rotate": true,
-        "maxsize": "500M",
-        "maxlines": "10K",
-        "daily": true,
-        "sanitize": true
-    }], 
-    "sockets": [{
-        "enable": false,
-        "level": "DEBUG",
-        "category": "TestSocket",
-        "pattern": "[%D %T] [%C] [%L] (%S) %M",
-        "addr": "127.0.0.1:12124",
-        "protocol":"udp"
-    }]
-}`
-
-	filePath := "./logger.json"
-	io.SaveFile(filePath, txt)
-	log.LoadConfiguration(filePath)
-}
-
-func NewLogger(filter string) *log.Filter {
-	if !configed {
-		autoConfig()
+func getLogLevel(l string) log.Level {
+	var lvl log.Level
+	switch l {
+	case "FINEST":
+		lvl = log.FINEST
+	case "FINE":
+		lvl = log.FINE
+	case "DEBUG":
+		lvl = log.DEBUG
+	case "TRACE":
+		lvl = log.TRACE
+	case "INFO":
+		lvl = log.INFO
+	case "WARNING":
+		lvl = log.WARNING
+	case "ERROR":
+		lvl = log.ERROR
+	case "CRITICAL":
+		lvl = log.CRITICAL
+	default:
+		lvl = log.DEBUG
 	}
-
-	return log.LOGGER(filter)
+	return lvl
 }

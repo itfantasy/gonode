@@ -84,7 +84,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	}
 	this.info = info
 	// init the logger
-	this.logger = logger.NewLogger(this.info.Id)
+	this.logger = logger.NewLogger(this.info.Id, this.info.LogLevel, this.info.RmqUrl, this.info.RmqHost, GONODE_LOG_CHAN, this.info.RmqUser, this.info.RmqPass)
 
 	// init the core redis
 	this.coreRedis = redis.NewRedis()
@@ -288,6 +288,7 @@ func (this *GoNode) registerSelf() {
 	infoStr, err := json.Encode(this.info)
 	if err != nil {
 		this.logger.Error(err.Error())
+
 	}
 
 	this.coreRedis.Set("gonode_"+this.info.Id, this.info.Url)

@@ -9,8 +9,13 @@ type NodeInfo struct {
 	BackEnds   string
 	Public     bool
 	PubUrl     string
-	LogConf    string
 	UserDatas  map[string]string
+
+	LogLevel string
+	RmqUrl   string
+	RmqHost  string
+	RmqUser  string
+	RmqPass  string
 
 	RedUrl  string // the core redis url
 	RedPool int    // max conn num of redis
