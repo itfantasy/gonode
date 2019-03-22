@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/itfantasy/gonode/components/etc"
+	"github.com/itfantasy/gonode/components/other"
 	"github.com/itfantasy/gonode/components/pubsub"
 	"go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/mvcc/mvccpb"
@@ -19,13 +19,13 @@ const (
 type Etcd struct {
 	cli        *clientv3.Client
 	subscriber pubsub.ISubscriber
-	opts       *etc.CompOptions
+	opts       *other.CompOptions
 	root       string
 }
 
 func NewEtcd() *Etcd {
 	this := new(Etcd)
-	this.opts = etc.NewCompOptions()
+	this.opts = other.NewCompOptions()
 	this.opts.Set(OPT_CONNTIMEOUT, 5*time.Second)
 	this.opts.Set(OPT_RWTIMEOUT, time.Second)
 	return this
@@ -55,11 +55,11 @@ func (this *Etcd) Close() {
 	}
 }
 
-func (this *Etcd) SetAuther(user string, pass string) {
+func (this *Etcd) SetAuthor(user string, pass string) {
 
 }
 
-func (this *Etcd) SetOption(key string, val string) {
+func (this *Etcd) SetOption(key string, val interface{}) {
 	this.opts.Set(key, val)
 }
 

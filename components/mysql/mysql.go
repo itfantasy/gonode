@@ -4,14 +4,14 @@ import (
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/itfantasy/gonode/components/etc"
+	"github.com/itfantasy/gonode/components/other"
 )
 
 type MySql struct {
 	user string
 	pass string
 	db   *sql.DB
-	opts *etc.CompOptions
+	opts *other.CompOptions
 }
 
 func NewMySql() *MySql {

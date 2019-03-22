@@ -58,7 +58,7 @@ func (this *GoNode) onShell(channel string, msg string) {
 }
 
 func (this *GoNode) onDefaultShell(channel string, msg string) {
-	this.behavior.OnShell(channel, msg)
+	//this.behavior.OnShell(channel, msg)
 }
 
 func (this *GoNode) getNodeStatusInfo() string {

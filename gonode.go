@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/itfantasy/gonode/behaviors/cmd"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/components/logger"
 	"github.com/itfantasy/gonode/components/redis"
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/ws"
+	"github.com/itfantasy/gonode/utils/crypt"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 
@@ -23,9 +24,11 @@ import (
 )
 
 type GoNode struct {
-	info       *gen_server.NodeInfo
-	behavior   gen_server.GenServer
-	logger     *log.Filter
+	info     *gen_server.NodeInfo
+	behavior gen_server.GenServer
+	logger   *log.Filter
+	logcomp  components.IComponent
+
 	coreRedis  *redis.Redis
 	netWorkers map[string]nets.INetWorker
 	lock       sync.RWMutex
@@ -77,23 +80,31 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	// get the node self info config
 	this.behavior = behavior
-	info, err := this.behavior.Setup()
-	if err != nil {
-		this.logger.Error("get the node self info err!" + err.Error())
+	info := this.behavior.Setup()
+	if info == nil {
+		fmt.Println("Initialize Faild!! Can not setup an correct nodeinfo!!")
 		return
 	}
 	this.info = info
 	// init the logger
-	this.logger = logger.NewLogger(this.info.Id, this.info.LogLevel, this.info.RmqUrl, this.info.RmqHost, GONODE_LOG_CHAN, this.info.RmqUser, this.info.RmqPass)
+	if this.info.LogComp != "" {
+		logcomp, err := components.NewComponent(this.info.LogComp)
+		if err != nil {
+			fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
+		}
+		this.logcomp = logcomp
+	}
+
+	this.logger = logger.NewLogger(this.info.Id, this.info.LogLevel, GONODE_LOG_CHAN, this.logcomp)
 
 	// init the core redis
-	this.coreRedis = redis.NewRedis()
-	this.coreRedis.SetAuthor("", this.info.RedAuth)
-	this.coreRedis.SetOption(redis.OPT_MAXPOOL, this.info.RedPool)
-	if err := this.coreRedis.Conn(this.info.RedUrl, strconv.Itoa(this.info.RedDB)); err != nil {
-		this.logger.Error("cannot connect to the core redis!!")
+	regcomp, err := components.NewComponent(this.info.RegComp)
+	if err != nil {
+		fmt.Println("Initialize Faild!! Can not create the Core Register Component!!")
+		this.logger.Error(err.Error())
 		return
 	}
+	this.coreRedis = regcomp.(*redis.Redis)
 	// sub the redis channel
 	this.coreRedis.BindSubscriber(this)
 	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
@@ -103,7 +114,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.Listen(this.info.Url)
 
 	// check if auto detect
-	if this.info.AutoDetect {
+	if this.info.BackEnds != "" {
 		go this.autoDetect()
 	}
 
@@ -220,11 +231,11 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	info, err := this.getNodeInfo(url)
 	if err != nil {
 		// cannot find the node in lan
-		if !this.info.Public {
+		if this.info.PubUrl == "" {
 			this.logger.Info("not a inside node! give up the url:" + url)
 			return "", false
 		} else {
-			connId := this.behavior.OnRanId()
+			connId := this.randomCntId()
 			return connId, true
 		}
 	} else {
@@ -263,7 +274,7 @@ func (this *GoNode) checkNewNode(id string) {
 	exist := nets.IsIdExists(id)
 	if !exist {
 		// check the local node is interested in the new node
-		if this.behavior.OnDetect(id) {
+		if this.checkTargetId(id) {
 			this.logger.Info("a new node has been found!", id)
 			// find the node url by the id
 			url, err := this.getNodeUrlById(id)
@@ -301,6 +312,21 @@ func (this *GoNode) registerSelf() {
 	this.logger.Info("report the node info:" + msg)
 }
 
+func (this *GoNode) randomCntId() string {
+	return "cnt@" + this.info.Id + "$" + crypt.C32()
+}
+
+func (this *GoNode) checkTargetId(id string) bool {
+	label := strings.Split(id, "-")[0]
+	backEnds := strings.Split(this.info.BackEnds, ",")
+	for _, item := range backEnds {
+		if item == label {
+			return true
+		}
+	}
+	return false
+}
+
 // -------------- redis --------------------
 
 func (this *GoNode) CoreRedis() *redis.Redis {
@@ -312,11 +338,6 @@ func (this *GoNode) CoreRedis() *redis.Redis {
 func (this *GoNode) Logger() *log.Filter {
 	return this.logger
 }
-
-//func (this *GoNode) ReportLog(msg string) {
-//	// report the log by the redis comp
-//	this.coreRedis.Publish(GONODE_LOG_CHAN, msg)
-//}
 
 // -------------- other ----------------
 

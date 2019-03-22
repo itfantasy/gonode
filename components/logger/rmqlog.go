@@ -22,16 +22,7 @@ func (w RabbitMQLogWriter) Close() {
 	close(w)
 }
 
-func NewRabbitMQLogWriter(url string, host string, logchan string, user string, pass string) RabbitMQLogWriter {
-
-	rmq := rabbitmq.NewRabbitMQ()
-	rmq.SetAuther(user, pass)
-	err := rmq.Conn(url, host)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "NewRabbitMQLogWriter(%q): %s\n", url+"/"+host, err)
-		return nil
-	}
+func NewRabbitMQLogWriter(rmq *rabbitmq.RabbitMQ, logchan string) RabbitMQLogWriter {
 
 	w := RabbitMQLogWriter(make(chan *log.LogRecord, log.LogBufferLength))
 
@@ -44,13 +35,13 @@ func NewRabbitMQLogWriter(url string, host string, logchan string, user string, 
 			// Marshall into JSON
 			js, err := json.Marshal(rec)
 			if err != nil {
-				fmt.Fprint(os.Stderr, "RabbitMQLogWriter(%q): %s", url+"/"+host, err)
+				fmt.Fprint(os.Stderr, "RabbitMQLogWriter: %s", err)
 				return
 			}
 
 			err2 := rmq.Publish(logchan, string(js))
 			if err2 != nil {
-				fmt.Fprint(os.Stderr, "RabbitMQLogWriter(%q): %s", url+"/"+host, err2)
+				fmt.Fprint(os.Stderr, "RabbitMQLogWriter: %s", err2)
 				return
 			}
 		}

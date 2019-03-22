@@ -1,4 +1,8 @@
-package etc
+package other
+
+import (
+	"strconv"
+)
 
 type CompOptions struct {
 	options map[string]interface{}
@@ -41,7 +45,15 @@ func (this *CompOptions) GetInt(key string) int {
 	}
 	ret, ok := val.(int)
 	if !ok {
-		return 0
+		strVal, ok := val.(string)
+		if !ok {
+			return 0
+		}
+		iVal, err := strconv.Atoi(strVal)
+		if err != nil {
+			return 0
+		}
+		return iVal
 	}
 	return ret
 }

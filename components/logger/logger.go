@@ -1,15 +1,18 @@
 package logger
 
 import (
+	"github.com/itfantasy/gonode/components"
+	"github.com/itfantasy/gonode/components/rabbitmq"
 	log "github.com/jeanphorn/log4go"
 )
 
 var globalLogger log.Logger
 
-func NewLogger(id string, loglevel string, rmqurl string, rmqhost string, rmqchan string, rmquser string, rmqpass string) *log.Filter {
-	if rmqurl != "" && rmqhost != "" {
+func NewLogger(id string, loglevel string, logchan string, logcomp components.IComponent) *log.Filter {
+	rmq, ok := logcomp.(*rabbitmq.RabbitMQ)
+	if rmq != nil && ok {
 		globalLogger = log.Logger{
-			id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmqurl, rmqhost, rmqchan, rmquser, rmqpass), id},
+			id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmq, logchan), id},
 		}
 	} else {
 		globalLogger = log.Logger{

@@ -1,7 +1,7 @@
 package rabbitmq
 
 import (
-	"github.com/itfantasy/gonode/components/etc"
+	"github.com/itfantasy/gonode/components/other"
 	"github.com/itfantasy/gonode/components/pubsub"
 	"github.com/streadway/amqp"
 )
@@ -26,7 +26,7 @@ type RabbitMQ struct {
 	conn       *amqp.Connection
 	ch         *amqp.Channel
 	queDict    map[string]*amqp.Queue
-	opts       *etc.CompOptions
+	opts       *other.CompOptions
 	subscriber pubsub.ISubscriber
 }
 
@@ -35,7 +35,7 @@ func NewRabbitMQ() *RabbitMQ {
 	this.user = "guest"
 	this.pass = "guest"
 	this.queDict = make(map[string]*amqp.Queue)
-	this.opts = etc.NewCompOptions()
+	this.opts = other.NewCompOptions()
 	this.opts.Set(OPT_AUTOACK, true)
 	return this
 }
@@ -77,7 +77,7 @@ func (this *RabbitMQ) autoQueueDeclare(name string) (*amqp.Queue, error) {
 	return this.queDict[name], nil
 }
 
-func (this *RabbitMQ) SetAuther(user string, pass string) {
+func (this *RabbitMQ) SetAuthor(user string, pass string) {
 	this.user = user
 	this.pass = pass
 }
