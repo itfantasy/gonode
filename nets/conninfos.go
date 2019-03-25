@@ -14,16 +14,18 @@ type ConnInfos struct {
 }
 
 type connItemInfo struct {
-	id    string
-	proto string
-	conn  net.Conn
+	id        string
+	proto     string
+	conn      net.Conn
+	netWorker INetWorker
 }
 
-func newConnItemInfo(id string, proto string, conn net.Conn) *connItemInfo {
+func newConnItemInfo(id string, proto string, conn net.Conn, netWorker INetWorker) *connItemInfo {
 	this := new(connItemInfo)
 	this.id = id
 	this.proto = proto
 	this.conn = conn
+	this.netWorker = netWorker
 	return this
 }
 
@@ -38,7 +40,7 @@ func InitKvvk() {
 	initStates()
 }
 
-func AddConnInfo(id string, proto string, conn net.Conn) error {
+func AddConnInfo(id string, proto string, conn net.Conn, netWorker INetWorker) error {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -47,7 +49,7 @@ func AddConnInfo(id string, proto string, conn net.Conn) error {
 	if ok || ok2 {
 		return errors.New("a same conn info has existed!")
 	}
-	connInfos.kv[id] = newConnItemInfo(id, proto, conn)
+	connInfos.kv[id] = newConnItemInfo(id, proto, conn, netWorker)
 	connInfos.vk[conn] = id
 
 	if proto == KCP || proto == TCP {
@@ -80,15 +82,15 @@ func GetInfoIdByConn(conn net.Conn) (string, bool) {
 	return val, exist
 }
 
-func GetInfoConnById(id string) (net.Conn, string, bool) {
+func GetInfoConnById(id string) (net.Conn, string, INetWorker, bool) {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	val, exist := connInfos.kv[id]
 	if exist {
-		return val.conn, val.proto, exist
+		return val.conn, val.proto, val.netWorker, exist
 	} else {
-		return nil, "", false
+		return nil, "", nil, false
 	}
 }
 

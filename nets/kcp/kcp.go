@@ -89,7 +89,7 @@ func (this *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
 
 func (this *KcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
-	err := nets.AddConnInfo(id, nets.KCP, conn)
+	err := nets.AddConnInfo(id, nets.KCP, conn, this)
 	if err != nil {
 		this.onError(conn, err)
 	} else {

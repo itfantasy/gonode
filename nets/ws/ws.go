@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"net"
+
 	"github.com/itfantasy/gonode/nets"
 	"golang.org/x/net/websocket"
-	"net"
 )
 
 type WSNetWorker struct {
@@ -61,7 +62,7 @@ func (this *WSNetWorker) Send(conn net.Conn, msg []byte) error {
 
 func (this *WSNetWorker) onConn(conn *websocket.Conn, id string) {
 	// record the set from id to conn
-	err := nets.AddConnInfo(id, nets.WS, conn)
+	err := nets.AddConnInfo(id, nets.WS, conn, this)
 	if err != nil {
 		this.onError(conn, err)
 	} else {

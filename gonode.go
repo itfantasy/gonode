@@ -112,6 +112,9 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	// register self info to core redis
 	this.registerSelf()
 	this.Listen(this.info.Url)
+	if this.info.PubUrl != "" && this.info.PubUrl != this.info.Url {
+		this.Listen(this.info.PubUrl)
+	}
 
 	// check if auto detect
 	if this.info.BackEnds != "" {
@@ -167,21 +170,21 @@ func (this *GoNode) netWorker(url string) nets.INetWorker {
 	}
 	infos := strings.Split(url, "://") // get the header of protocol
 	proto := infos[0]
-	_, exists := this.netWorkers[proto]
+	_, exists := this.netWorkers[url]
 	if !exists {
 		switch proto {
 		case (string)(nets.WS):
-			this.netWorkers[proto] = new(ws.WSNetWorker)
+			this.netWorkers[url] = new(ws.WSNetWorker)
 			break
 		case (string)(nets.KCP):
-			this.netWorkers[proto] = new(kcp.KcpNetWorker)
+			this.netWorkers[url] = new(kcp.KcpNetWorker)
 			break
 		}
-		this.netWorkers[proto].BindEventListener(this)
+		this.netWorkers[url].BindEventListener(this)
 	} else {
-		this.logger.Warn("there has been a same proto networker!" + proto)
+		this.logger.Warn("the url has been listening!" + url)
 	}
-	return this.netWorkers[proto]
+	return this.netWorkers[url]
 }
 
 func (this *GoNode) Listen(url string) {
@@ -198,13 +201,9 @@ func (this *GoNode) Connnect(url string, origin string) error {
 }
 
 func (this *GoNode) Send(id string, msg []byte) error {
-	conn, proto, exist := nets.GetInfoConnById(id)
+	conn, _, netWorker, exist := nets.GetInfoConnById(id)
 	if !exist {
 		return errors.New("there is not the id in local record!")
-	}
-	netWorker, exist := this.netWorkers[proto]
-	if !exist {
-		return errors.New("illegal proto!")
 	}
 	return netWorker.Send(conn, msg)
 }
