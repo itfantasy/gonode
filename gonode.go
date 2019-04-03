@@ -192,6 +192,7 @@ func (this *GoNode) Listen(url string) {
 		err := this.netWorker(url).Listen(url)
 		if err != nil {
 			this.logger.Error(err.Error())
+			this.OnError(this.info.Id, err)
 		}
 	}()
 }
