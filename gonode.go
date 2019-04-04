@@ -109,12 +109,15 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.coreRedis.BindSubscriber(this)
 	go this.coreRedis.Subscribe(GONODE_PUB_CHAN)
 
+	theUrl, err := this.getListenUrl(this.info.Url)
+	if err != nil {
+		fmt.Println("Initialize Faild!! Can not parse the url!!")
+		this.logger.Error(err.Error())
+	}
+
 	// register self info to core redis
 	this.registerSelf()
-	this.Listen(this.info.Url)
-	if this.info.PubUrl != "" && this.info.PubUrl != this.info.Url {
-		this.Listen(this.info.PubUrl)
-	}
+	this.Listen(theUrl)
 
 	// check if auto detect
 	if this.info.BackEnds != "" {
@@ -163,6 +166,22 @@ func (this *GoNode) OnSubError(channel string, err error) {
 }
 
 // -------------- net ------------------
+
+func (this *GoNode) getListenUrl(url string) (string, error) {
+	infos := strings.Split(url, "://") // get the header of protocol
+	if len(infos) != 2 {
+		return "", errors.New("illegal url!" + url)
+	}
+	proto := infos[0]
+	ipAndPort := strings.Split(infos[1], ":")
+	if len(ipAndPort) != 2 {
+		return "", errors.New("illegal url!" + url)
+	}
+	if !this.info.Pub {
+		return this.info.Url, nil
+	}
+	return proto + "://" + "0.0.0.0" + ":" + ipAndPort[1], nil
+}
 
 func (this *GoNode) netWorker(url string) nets.INetWorker {
 	if this.netWorkers == nil {
@@ -231,7 +250,7 @@ func (this *GoNode) CheckUrlLegal(url string) (string, bool) {
 	info, err := this.getNodeInfo(url)
 	if err != nil {
 		// cannot find the node in lan
-		if this.info.PubUrl == "" {
+		if !this.info.Pub {
 			this.logger.Info("not a inside node! give up the url:" + url)
 			return "", false
 		} else {

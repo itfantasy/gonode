@@ -4,7 +4,7 @@ package gen_server
 type NodeInfo struct {
 	Id       string
 	Url      string
-	PubUrl   string
+	Pub      bool
 	BackEnds string
 
 	LogLevel string
