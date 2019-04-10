@@ -1,6 +1,7 @@
 package etcd
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -77,6 +78,18 @@ func (this *Etcd) Set(key string, val string) error {
 }
 
 func (this *Etcd) Get(key string) (string, error) {
+	dict, err := this.Gets(key)
+	if err != nil {
+		return "", err
+	}
+	val, exist := dict[key]
+	if !exist {
+		return "", errors.New("the key does not exist! " + key)
+	}
+	return val, nil
+}
+
+func (this *Etcd) Gets(key string) (map[string]string, error) {
 	if this.root != "" {
 		key = this.root + "/" + key
 	}
@@ -84,15 +97,13 @@ func (this *Etcd) Get(key string) (string, error) {
 	resp, err := this.cli.Get(ctx, key)
 	cancel()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	val := ""
+	ret := make(map[string]string)
 	for _, kv := range resp.Kvs {
-		if string(kv.Key) == key {
-			val = string(kv.Value)
-		}
+		ret[string(kv.Key)] = string(kv.Value)
 	}
-	return val, nil
+	return ret, nil
 }
 
 func (this *Etcd) Subscribe(key string) {

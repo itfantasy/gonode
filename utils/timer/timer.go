@@ -4,6 +4,6 @@ import (
 	"time"
 )
 
-func Sleep(ms time.Duration) {
-	<-time.After(time.Millisecond * ms)
+func Sleep(ms int) {
+	<-time.After(time.Millisecond * time.Duration(ms))
 }
