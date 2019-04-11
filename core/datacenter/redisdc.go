@@ -35,7 +35,7 @@ func (this *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string
 
 	// sub the channel
 	this.coreRedis.BindSubscriber(this)
-	this.coreRedis.Subscribe(channel)
+	go this.coreRedis.Subscribe(channel)
 
 	// register self
 	infoStr, err := json.Encode(this.info)
@@ -53,21 +53,23 @@ func (this *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string
 	this.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+this.info.Id)
 
 	// and auto detect per msfrequency
-	go func() {
-		for {
-			timer.Sleep(msfrequency)
-			ids, err := this.coreRedis.SMembers(channel + ":all")
-			if err != nil {
-				this.callbacks.OnError(err)
-				continue
-			}
-			for _, id := range ids {
-				if id != this.info.Id {
-					this.callbacks.OnNewNode(id)
+	if this.info.BackEnds != "" {
+		go func() {
+			for {
+				timer.Sleep(msfrequency)
+				ids, err := this.coreRedis.SMembers(channel + ":all")
+				if err != nil {
+					this.callbacks.OnDCError(err)
+					continue
+				}
+				for _, id := range ids {
+					if id != this.info.Id {
+						this.callbacks.OnNewNode(id)
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return nil
 }
@@ -107,6 +109,6 @@ func (this *RedisDC) OnSubMessage(channel string, msg string) {
 }
 func (this *RedisDC) OnSubError(channel string, err error) {
 	if this.channel == channel {
-		this.callbacks.OnError(err)
+		this.callbacks.OnDCError(err)
 	}
 }

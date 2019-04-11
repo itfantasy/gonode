@@ -65,7 +65,7 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 	}
 }
 
-func (this *KcpNetWorker) Connect(url string, origin string) error {
+func (this *KcpNetWorker) Connect(id string, url string, origin string) error {
 	nets.InitKvvk()
 
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
@@ -73,7 +73,7 @@ func (this *KcpNetWorker) Connect(url string, origin string) error {
 
 	conn, err := kcp.Dial(infos[0])
 	if err == nil {
-		this.doHandShake(conn, origin, url)
+		this.doHandShake(conn, origin, url, id)
 		go this.h_kcpSocket(conn)
 	}
 	return err
@@ -151,7 +151,7 @@ func (this *KcpNetWorker) Close(id string, conn net.Conn) error {
 	return conn.Close()
 }
 
-func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string) error {
+func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -162,12 +162,13 @@ func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string) 
 	if err2 != nil {
 		return err2
 	}
-	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	if legal {
+
+	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	if b {
 		this.onConn(conn, id)
 		return nil
 	} else {
-		return errors.New("handshake illegal!!")
+		return errors.New("handshake illegal!! " + url + "#" + id)
 	}
 }
 
@@ -180,17 +181,18 @@ func (this *KcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	url := origin
-	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	if legal {
+	urlAndId := strings.Split(origin, "#")
+	if len(urlAndId) != 2 {
+		return errors.New("illegal origin data! " + origin)
+	}
+	id := urlAndId[1]
+	url := urlAndId[0]
+	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	if b {
 		this.onConn(conn, id)
 		fmt.Println("handshake succeed !!")
 		return nil
 	} else {
 		return errors.New("handshake illegal!!")
 	}
-}
-
-func (this *KcpNetWorker) keepAlive() {
-
 }

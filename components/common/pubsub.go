@@ -1,4 +1,4 @@
-package pubsub
+package common
 
 // the publish-subscrib equipment
 type IPubSubEquip interface {

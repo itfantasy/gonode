@@ -65,7 +65,7 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 	}
 }
 
-func (this *TcpNetWorker) Connect(url string, origin string) error {
+func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
 	nets.InitKvvk()
 
 	theUrl := strings.Trim(url, "tcp://") // trim the ws header
@@ -78,7 +78,7 @@ func (this *TcpNetWorker) Connect(url string, origin string) error {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err == nil {
-		this.doHandShake(conn, origin, url)
+		this.doHandShake(conn, origin, url, id)
 		go this.h_tcpSocket(conn)
 	}
 	return err
@@ -94,7 +94,7 @@ func (this *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 
 func (this *TcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
-	err := nets.AddConnInfo(id, nets.TCP, conn)
+	err := nets.AddConnInfo(id, nets.TCP, conn, this)
 	if err != nil {
 		this.onError(conn, err)
 	} else {
@@ -144,7 +144,7 @@ func (this *TcpNetWorker) Close(id string, conn net.Conn) error {
 	return conn.Close()
 }
 
-func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string) error {
+func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -155,12 +155,12 @@ func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string) 
 	if err2 != nil {
 		return err2
 	}
-	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	if legal {
+	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	if b {
 		this.onConn(conn, id)
 		return nil
 	} else {
-		return errors.New("handshake illegal!!")
+		return errors.New("handshake illegal!! " + url + "#" + id)
 	}
 }
 
@@ -173,9 +173,14 @@ func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	url := origin
-	id, legal := this.eventListener.CheckUrlLegal(url) // let the gonode to check if the url is legal
-	if legal {
+	urlAndId := strings.Split(origin, "#")
+	if len(urlAndId) != 2 {
+		return errors.New("illegal origin data! " + origin)
+	}
+	id := urlAndId[1]
+	url := urlAndId[0]
+	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	if b {
 		this.onConn(conn, id)
 		return nil
 	} else {

@@ -5,8 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/itfantasy/gonode/components/other"
-	"github.com/itfantasy/gonode/components/pubsub"
+	"github.com/itfantasy/gonode/components/common"
 	"go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/mvcc/mvccpb"
 	"golang.org/x/net/context"
@@ -19,14 +18,14 @@ const (
 
 type Etcd struct {
 	cli        *clientv3.Client
-	subscriber pubsub.ISubscriber
-	opts       *other.CompOptions
+	subscriber common.ISubscriber
+	opts       *common.CompOptions
 	root       string
 }
 
 func NewEtcd() *Etcd {
 	this := new(Etcd)
-	this.opts = other.NewCompOptions()
+	this.opts = common.NewCompOptions()
 	this.opts.Set(OPT_CONNTIMEOUT, 5*time.Second)
 	this.opts.Set(OPT_RWTIMEOUT, time.Second)
 	return this
@@ -106,6 +105,10 @@ func (this *Etcd) Gets(key string) (map[string]string, error) {
 	return ret, nil
 }
 
+func (this *Etcd) Publish(key string, val string) error {
+	return this.Set(key, val)
+}
+
 func (this *Etcd) Subscribe(key string) {
 	if this.root != "" {
 		key = this.root + "/" + key
@@ -123,7 +126,7 @@ func (this *Etcd) Subscribe(key string) {
 	}
 }
 
-func (this *Etcd) BindSubscriber(subscriber pubsub.ISubscriber) {
+func (this *Etcd) BindSubscriber(subscriber common.ISubscriber) {
 	this.subscriber = subscriber
 }
 

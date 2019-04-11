@@ -11,7 +11,7 @@ import (
 
 type IDCCallbacks interface {
 	OnNewNode(id string)
-	OnError(err error)
+	OnDCError(err error)
 }
 
 type IDataCenter interface {

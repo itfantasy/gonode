@@ -4,20 +4,21 @@ import (
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/itfantasy/gonode/components/other"
+	"github.com/itfantasy/gonode/components/common"
 )
 
 type MySql struct {
 	user string
 	pass string
 	db   *sql.DB
-	opts *other.CompOptions
+	opts *common.CompOptions
 }
 
 func NewMySql() *MySql {
 	this := new(MySql)
 	this.user = "root"
 	this.pass = ""
+	this.opts = common.NewCompOptions()
 	return this
 }
 

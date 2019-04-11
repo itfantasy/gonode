@@ -39,7 +39,7 @@ func main() {
 	l := log.New(flog, "", os.O_APPEND)
 	for _, file := range files {
 		arg := "flatc -n -o " + netPath + " " + srcPath + file
-		cmd := exec.Command("flatc", "-n", "-o", netPath, srcPath+file)
+		cmd := exec.Command("bin/flatc", "-n", "-o", netPath, srcPath+file)
 		err := cmd.Start()
 		if err != nil {
 			fmt.Println(err)
@@ -48,7 +48,7 @@ func main() {
 			l.Println(arg)
 		}
 		arg2 := "flatc -g -o " + goPath + " " + srcPath + file
-		cmd2 := exec.Command("flatc", "-g", "-o", goPath, srcPath+file)
+		cmd2 := exec.Command("bin/flatc", "-g", "-o", goPath, srcPath+file)
 		err2 := cmd2.Start()
 		if err2 != nil {
 			fmt.Println(err2)

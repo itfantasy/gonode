@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/itfantasy/gonode/components/other"
-	"github.com/itfantasy/gonode/components/pubsub"
+	"github.com/itfantasy/gonode/components/common"
 )
 
 const (
@@ -22,14 +21,14 @@ type Redis struct {
 	auth        string
 	RedisClient *redis.Pool
 	pscDict     map[string]*redis.PubSubConn
-	subscriber  pubsub.ISubscriber
-	opts        *other.CompOptions
+	subscriber  common.ISubscriber
+	opts        *common.CompOptions
 }
 
 func NewRedis() *Redis {
 	this := new(Redis)
 	this.pscDict = make(map[string]*redis.PubSubConn)
-	this.opts = other.NewCompOptions()
+	this.opts = common.NewCompOptions()
 	this.opts.Set(OPT_MAXPOOL, 100)
 	return this
 }
@@ -127,7 +126,7 @@ func (this *Redis) Delete(key string) (int64, error) {
 
 // -------------pub/sub----------------
 
-func (this *Redis) BindSubscriber(subscriber pubsub.ISubscriber) {
+func (this *Redis) BindSubscriber(subscriber common.ISubscriber) {
 	this.subscriber = subscriber
 }
 

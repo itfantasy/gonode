@@ -7,10 +7,10 @@ import (
 
 type INetWorker interface {
 	Listen(url string) error
-	Connect(url string, origin string) error
+	Connect(id string, url string, origin string) error
 	Send(conn net.Conn, msg []byte) error
-	BindEventListener(eventListener INetEventListener) error
 	Close(id string, conn net.Conn) error
+	BindEventListener(eventListener INetEventListener) error
 }
 
 const (

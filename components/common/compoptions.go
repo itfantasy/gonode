@@ -1,4 +1,4 @@
-package other
+package common
 
 import (
 	"strconv"

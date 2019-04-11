@@ -29,7 +29,7 @@ func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string,
 
 	// sub the channel
 	this.coreEtcd.BindSubscriber(this)
-	this.coreEtcd.Subscribe(channel)
+	go this.coreEtcd.Subscribe(channel)
 
 	// register self
 	infoStr, err := json.Encode(this.info)
@@ -43,21 +43,23 @@ func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string,
 	}
 
 	// and auto detect per msfrequency
-	go func() {
-		for {
-			timer.Sleep(msfrequency)
-			ids, err := this.coreEtcd.Gets(channel + ":all")
-			if err != nil {
-				this.callbacks.OnError(err)
-				continue
-			}
-			for id, _ := range ids {
-				if id != this.info.Id {
-					this.callbacks.OnNewNode(id)
+	if this.info.BackEnds != "" {
+		go func() {
+			for {
+				timer.Sleep(msfrequency)
+				ids, err := this.coreEtcd.Gets(channel + ":all")
+				if err != nil {
+					this.callbacks.OnDCError(err)
+					continue
+				}
+				for id, _ := range ids {
+					if id != this.info.Id {
+						this.callbacks.OnNewNode(id)
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return nil
 }
@@ -81,11 +83,17 @@ func (this *EtcdDC) CheckNode(id string, origin string) bool {
 }
 
 func (this *EtcdDC) OnSubscribe(channel string) {
+	if this.channel == channel {
 
+	}
 }
 func (this *EtcdDC) OnSubMessage(channel string, msg string) {
-
+	if this.channel == channel {
+		this.callbacks.OnNewNode(msg)
+	}
 }
 func (this *EtcdDC) OnSubError(channel string, err error) {
-
+	if this.channel == channel {
+		this.callbacks.OnDCError(err)
+	}
 }
