@@ -1,6 +1,8 @@
 package datacenter
 
 import (
+	"strings"
+
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components/etcd"
 	"github.com/itfantasy/gonode/utils/json"
@@ -90,18 +92,18 @@ func (this *EtcdDC) CheckNode(id string, origin string) bool {
 	return true
 }
 
-func (this *EtcdDC) OnSubscribe(channel string) {
-	if this.channel == channel {
+func (this *EtcdDC) OnSubscribe(path string) {
+	if this.channel == path {
 
 	}
 }
-func (this *EtcdDC) OnSubMessage(channel string, msg string) {
-	if this.channel == channel {
-		this.callbacks.OnNewNode(msg)
+func (this *EtcdDC) OnSubMessage(path string, msg string) {
+	if strings.HasPrefix(path, this.channel) {
+		this.callbacks.OnNewNode(strings.TrimPrefix(path, this.channel+"/"))
 	}
 }
-func (this *EtcdDC) OnSubError(channel string, err error) {
-	if this.channel == channel {
+func (this *EtcdDC) OnSubError(path string, err error) {
+	if strings.HasPrefix(path, this.channel) {
 		this.callbacks.OnDCError(err)
 	}
 }

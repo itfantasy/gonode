@@ -63,12 +63,12 @@ func (this *Etcd) SetOption(key string, val interface{}) {
 	this.opts.Set(key, val)
 }
 
-func (this *Etcd) Set(key string, val string) error {
+func (this *Etcd) Set(path string, val string) error {
 	if this.root != "" {
-		key = this.root + "/" + key
+		path = this.root + "/" + path
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
-	_, err := this.cli.Put(ctx, key, val)
+	_, err := this.cli.Put(ctx, path, val)
 	cancel()
 	if err != nil {
 		return err
@@ -76,51 +76,61 @@ func (this *Etcd) Set(key string, val string) error {
 	return nil
 }
 
-func (this *Etcd) Get(key string) (string, error) {
-	dict, err := this.Gets(key)
+func (this *Etcd) Get(path string) (string, error) {
+	if this.root != "" {
+		path = this.root + "/" + path
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
+	resp, err := this.cli.Get(ctx, path)
+	cancel()
 	if err != nil {
 		return "", err
 	}
-	val, exist := dict[key]
-	if !exist {
-		return "", errors.New("the key does not exist! " + key)
+	for _, kv := range resp.Kvs {
+		if string(kv.Key) == path {
+			return string(kv.Value), nil
+		}
 	}
-	return val, nil
+	return "", errors.New("can not find the path! " + path)
 }
 
-func (this *Etcd) Gets(key string) (map[string]string, error) {
+func (this *Etcd) Gets(path string) (map[string]string, error) {
 	if this.root != "" {
-		key = this.root + "/" + key
+		path = this.root + "/" + path
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
-	resp, err := this.cli.Get(ctx, key)
+	resp, err := this.cli.Get(ctx, path, clientv3.WithPrefix())
 	cancel()
 	if err != nil {
 		return nil, err
 	}
 	ret := make(map[string]string)
 	for _, kv := range resp.Kvs {
-		ret[string(kv.Key)] = string(kv.Value)
+		key := string(kv.Key)
+		if this.root != "" {
+			key = strings.TrimPrefix(key, this.root+"/")
+		}
+		ret[key] = string(kv.Value)
 	}
 	return ret, nil
 }
 
-func (this *Etcd) Publish(key string, val string) error {
-	return this.Set(key, val)
+func (this *Etcd) Publish(path string, val string) error {
+	return this.Set(path, val)
 }
 
-func (this *Etcd) Subscribe(key string) {
+func (this *Etcd) Subscribe(path string) {
 	if this.root != "" {
-		key = this.root + "/" + key
+		path = this.root + "/" + path
 	}
-	ch := this.cli.Watch(context.Background(), key, clientv3.WithPrefix())
-	this.subscriber.OnSubscribe(key)
+	ch := this.cli.Watch(context.Background(), path, clientv3.WithPrefix())
+	this.subscriber.OnSubscribe(strings.TrimPrefix(path, this.root+"/"))
 	for resp := range ch {
 		for _, ev := range resp.Events {
 			if ev.Type == mvccpb.PUT {
-				this.subscriber.OnSubMessage(string(ev.Kv.Key), string(ev.Kv.Value))
+				this.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), this.root+"/"), string(ev.Kv.Value))
 			} else if ev.Type == mvccpb.DELETE {
-				this.subscriber.OnSubMessage(string(ev.Kv.Key), "")
+				this.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), this.root+"/"), "")
 			}
 		}
 	}
