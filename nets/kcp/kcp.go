@@ -17,7 +17,7 @@ type KcpNetWorker struct {
 }
 
 func (this *KcpNetWorker) Listen(url string) error {
-	nets.InitKvvk()
+
 	go nets.AutoPing(this)
 
 	url = strings.Trim(url, "kcp://") // trim the ws header
@@ -66,7 +66,6 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 }
 
 func (this *KcpNetWorker) Connect(id string, url string, origin string) error {
-	nets.InitKvvk()
 
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path

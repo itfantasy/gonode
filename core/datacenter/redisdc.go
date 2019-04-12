@@ -77,8 +77,16 @@ func (this *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 	if this.info.Id == id {
 		return this.info, nil
 	}
-
-	return nil, nil
+	infoStr, err := this.coreRedis.Get(this.channel + ":infos:" + id)
+	if err != nil {
+		return nil, err
+	}
+	var info gen_server.NodeInfo
+	err2 := json.Decode(infoStr, &info)
+	if err2 != nil {
+		return nil, err2
+	}
+	return &info, nil
 }
 func (this *RedisDC) CheckNode(id string, origin string) bool {
 	info, err := this.GetNodeInfo(id)

@@ -58,7 +58,7 @@ func (this *GoNode) OnNewNode(id string) {
 			// find the node url by the id
 			info, err := this.dc.GetNodeInfo(id)
 			if err == nil {
-				err2 := this.Connnect(info.Url, this.info.Url)
+				err2 := this.Connnect(info.Id, info.Url)
 				if err2 != nil {
 					this.logger.Error(err2.Error() + "[" + id + "]")
 				}

@@ -76,6 +76,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	nets.InitKvvk()
 
 	// get the node self info config
 	this.behavior = behavior
@@ -125,6 +126,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	}
 	this.Listen(theUrl)
 
+	this.logger.Info("node starting... " + this.info.Id)
 	this.behavior.Start()
 	select {}
 	this.logger.Error("shuting down!!!")

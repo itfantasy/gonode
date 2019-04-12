@@ -16,7 +16,7 @@ type WSNetWorker struct {
 }
 
 func (this *WSNetWorker) Listen(url string) error {
-	nets.InitKvvk()
+
 	url = strings.Trim(url, "ws://") // trim the ws header
 	infos := strings.Split(url, "/") // parse the sub path
 	http.Handle("/"+infos[1], websocket.Handler(this.h_webSocket))
@@ -52,7 +52,7 @@ func (this *WSNetWorker) h_webSocket(conn *websocket.Conn) {
 }
 
 func (this *WSNetWorker) Connect(id string, url string, origin string) error {
-	nets.InitKvvk()
+
 	id, b := this.eventListener.OnCheckNode(id, url)
 	if !b {
 		return errors.New("handshake illegal!! " + url + "#" + id)

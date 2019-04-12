@@ -47,7 +47,7 @@ func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string,
 		go func() {
 			for {
 				timer.Sleep(msfrequency)
-				ids, err := this.coreEtcd.Gets(channel + ":all")
+				ids, err := this.coreEtcd.Gets(channel)
 				if err != nil {
 					this.callbacks.OnDCError(err)
 					continue
@@ -67,8 +67,16 @@ func (this *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 	if this.info.Id == id {
 		return this.info, nil
 	}
-
-	return nil, nil
+	infoStr, err := this.coreEtcd.Get(this.channel + "/" + id)
+	if err != nil {
+		return nil, err
+	}
+	var info gen_server.NodeInfo
+	err2 := json.Decode(infoStr, &info)
+	if err2 != nil {
+		return nil, err2
+	}
+	return &info, nil
 }
 func (this *EtcdDC) CheckNode(id string, origin string) bool {
 	info, err := this.GetNodeInfo(id)

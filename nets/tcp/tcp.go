@@ -15,7 +15,7 @@ type TcpNetWorker struct {
 }
 
 func (this *TcpNetWorker) Listen(url string) error {
-	nets.InitKvvk()
+
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
 
@@ -66,7 +66,6 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 }
 
 func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
-	nets.InitKvvk()
 
 	theUrl := strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
