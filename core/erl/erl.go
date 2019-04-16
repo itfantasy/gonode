@@ -1,4 +1,4 @@
-package actor
+package erl
 
 import (
 	"hash/crc32"
@@ -16,6 +16,19 @@ func Spawn(fun func([]interface{}), capacity int) uint32 {
 	return pid
 }
 
+func Kill(pid uint32) bool {
+	v, ok := actors.Load(pid)
+	if !ok {
+		return false
+	}
+	actor, ok := v.(*Actor)
+	if !ok {
+		return false
+	}
+	actor.killing()
+	return true
+}
+
 func Post(pid uint32, args ...interface{}) bool {
 	v, ok := actors.Load(pid)
 	if !ok {
@@ -25,6 +38,9 @@ func Post(pid uint32, args ...interface{}) bool {
 	if !ok {
 		return false
 	}
-	actor.post(args)
-	return true
+	return actor.post(args)
+}
+
+func remove(pid uint32) {
+	actors.Delete(pid)
 }
