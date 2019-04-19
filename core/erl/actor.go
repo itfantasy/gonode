@@ -1,13 +1,13 @@
 package erl
 
 type Actor struct {
-	pid       uint32
+	pid       int64
 	thefunc   func([]interface{})
 	argschan  chan []interface{}
 	isKilling bool
 }
 
-func newActor(pid uint32, fun func([]interface{}), capacity int) *Actor {
+func newActor(pid int64, fun func([]interface{}), capacity int) *Actor {
 	this := new(Actor)
 	this.pid = pid
 	this.thefunc = fun

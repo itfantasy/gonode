@@ -15,8 +15,8 @@ import (
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/ws"
-	"github.com/itfantasy/gonode/utils/crypt"
 	"github.com/itfantasy/gonode/utils/json"
+	"github.com/itfantasy/gonode/utils/snowflake"
 
 	log "github.com/jeanphorn/log4go"
 )
@@ -216,7 +216,7 @@ func (this *GoNode) GetAllConnIds() []string {
 }
 
 func (this *GoNode) randomCntId() string {
-	return "cnt@" + this.info.Id + "$" + crypt.C32()
+	return "cnt-" + snowflake.Generate()
 }
 
 func (this *GoNode) checkTargetId(id string) bool {

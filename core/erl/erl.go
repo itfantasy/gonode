@@ -1,22 +1,21 @@
 package erl
 
 import (
-	"hash/crc32"
 	"sync"
 
-	"github.com/itfantasy/gonode/utils/crypt"
+	"github.com/itfantasy/gonode/utils/snowflake"
 )
 
 var actors sync.Map
 
-func Spawn(fun func([]interface{}), capacity int) uint32 {
-	pid := crc32.ChecksumIEEE([]byte(crypt.Guid()))
+func Spawn(fun func([]interface{}), capacity int) int64 {
+	pid := snowflake.GenerateRaw()
 	actor := newActor(pid, fun, capacity)
 	actors.Store(pid, actor)
 	return pid
 }
 
-func Kill(pid uint32) bool {
+func Kill(pid int64) bool {
 	actor, ok := get(pid)
 	if !ok {
 		return false
@@ -25,7 +24,7 @@ func Kill(pid uint32) bool {
 	return true
 }
 
-func Post(pid uint32, args ...interface{}) bool {
+func Post(pid int64, args ...interface{}) bool {
 	actor, ok := get(pid)
 	if !ok {
 		return false
@@ -33,7 +32,7 @@ func Post(pid uint32, args ...interface{}) bool {
 	return actor.post(args)
 }
 
-func Running(pid uint32) bool {
+func Running(pid int64) bool {
 	actor, ok := get(pid)
 	if !ok {
 		return false
@@ -41,7 +40,7 @@ func Running(pid uint32) bool {
 	return !actor.isKilling
 }
 
-func Waiting(pid uint32) int {
+func Waiting(pid int64) int {
 	actor, ok := get(pid)
 	if !ok {
 		return -1
@@ -52,7 +51,7 @@ func Waiting(pid uint32) int {
 	return len(actor.argschan)
 }
 
-func get(pid uint32) (*Actor, bool) {
+func get(pid int64) (*Actor, bool) {
 	v, ok := actors.Load(pid)
 	if !ok {
 		return nil, false
@@ -64,6 +63,6 @@ func get(pid uint32) (*Actor, bool) {
 	return actor, true
 }
 
-func remove(pid uint32) {
+func remove(pid int64) {
 	actors.Delete(pid)
 }
