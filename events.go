@@ -26,15 +26,14 @@ func (this *GoNode) OnError(id string, err error) {
 }
 
 func (this *GoNode) OnCheckNode(origin string) (string, bool) {
+	b := false
 	id, url, sig, err := nets.ParserOriginInfo(origin)
-	if err != nil {
-		this.logger.Info(err.Error())
-		return "", false
+	if err == nil {
+		b = this.dc.CheckNode(id, sig)
 	}
-	b := this.dc.CheckNode(id, sig)
 	if !b {
 		if !this.info.Pub {
-			this.logger.Info("not a inside node! give up the url:" + url + "#" + id)
+			this.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
 			connId := this.randomCntId()

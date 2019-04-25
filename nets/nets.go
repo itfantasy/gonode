@@ -56,6 +56,9 @@ func CombineOriginInfo(id string, url string, sig string) string {
 }
 
 func ParserOriginInfo(origin string) (string, string, string, error) {
+	if origin == "" {
+		return "", "", "", errors.New("empty origin info!")
+	}
 	urlAndIdSig := strings.Split(origin, "?")
 	if len(urlAndIdSig) != 2 {
 		err := errors.New("illegal origin data! " + origin)

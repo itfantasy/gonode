@@ -89,6 +89,9 @@ func (this *EtcdDC) GetNodeSig(id string) (string, error) {
 	return info.Sig, err
 }
 func (this *EtcdDC) CheckNode(id string, sig string) bool {
+	if id == "" {
+		return false
+	}
 	nodeSig, err := this.GetNodeSig(id)
 	if err != nil {
 		return false

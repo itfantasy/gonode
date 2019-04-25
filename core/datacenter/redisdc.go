@@ -97,6 +97,9 @@ func (this *RedisDC) GetNodeSig(id string) (string, error) {
 	return info.Sig, err
 }
 func (this *RedisDC) CheckNode(id string, sig string) bool {
+	if id == "" {
+		return false
+	}
 	nodeSig, err := this.GetNodeSig(id)
 	if err != nil {
 		return false
