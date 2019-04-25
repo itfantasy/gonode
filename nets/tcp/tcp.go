@@ -154,13 +154,8 @@ func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, 
 	if err2 != nil {
 		return err2
 	}
-	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
-	if b {
-		this.onConn(conn, id)
-		return nil
-	} else {
-		return errors.New("handshake illegal!! " + url + "#" + id)
-	}
+	this.onConn(conn, id)
+	return nil
 }
 
 func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
@@ -172,13 +167,7 @@ func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	urlAndId := strings.Split(origin, "#")
-	if len(urlAndId) != 2 {
-		return errors.New("illegal origin data! " + origin)
-	}
-	id := urlAndId[1]
-	url := urlAndId[0]
-	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	id, b := this.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
 		this.onConn(conn, id)
 		return nil

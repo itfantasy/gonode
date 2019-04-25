@@ -5,5 +5,5 @@ type INetEventListener interface {
 	OnMsg(string, []byte)
 	OnClose(string)
 	OnError(string, error)
-	OnCheckNode(string, string) (string, bool)
+	OnCheckNode(string) (string, bool)
 }

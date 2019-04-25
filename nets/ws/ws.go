@@ -25,16 +25,8 @@ func (this *WSNetWorker) Listen(url string) error {
 }
 
 func (this *WSNetWorker) h_webSocket(conn *websocket.Conn) {
-	origin := conn.RemoteAddr().String()
-	urlAndId := strings.Split(origin, "#")
-	if len(urlAndId) != 2 {
-		err := errors.New("illegal origin data! " + origin)
-		this.onError(conn, err)
-		return
-	}
-	url := urlAndId[0]
-	id := urlAndId[1]
-	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	remote := conn.RemoteAddr().String()
+	id, b := this.eventListener.OnCheckNode(remote) // let the gonode to check if the url is legal
 	if b {
 		this.onConn(conn, id)
 		var msg []byte
@@ -52,11 +44,6 @@ func (this *WSNetWorker) h_webSocket(conn *websocket.Conn) {
 }
 
 func (this *WSNetWorker) Connect(id string, url string, origin string) error {
-
-	id, b := this.eventListener.OnCheckNode(id, url)
-	if !b {
-		return errors.New("handshake illegal!! " + url + "#" + id)
-	}
 	conn, err := websocket.Dial(url, "tcp", origin)
 	if err == nil {
 		go this.h_webSocket(conn)

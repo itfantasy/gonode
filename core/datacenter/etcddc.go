@@ -34,6 +34,7 @@ func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string,
 	go this.coreEtcd.Subscribe(channel)
 
 	// register self
+	this.info.Signature()
 	infoStr, err := json.Encode(this.info)
 	if err != nil {
 		return err
@@ -80,13 +81,19 @@ func (this *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 	}
 	return &info, nil
 }
-func (this *EtcdDC) CheckNode(id string, origin string) bool {
+func (this *EtcdDC) GetNodeSig(id string) (string, error) {
 	info, err := this.GetNodeInfo(id)
+	if err != nil {
+		return "", err
+	}
+	return info.Sig, err
+}
+func (this *EtcdDC) CheckNode(id string, sig string) bool {
+	nodeSig, err := this.GetNodeSig(id)
 	if err != nil {
 		return false
 	}
-	url := info.Url
-	if extractIPFromUrl(url) != extractIPFromUrl(origin) {
+	if nodeSig != sig {
 		return false
 	}
 	return true

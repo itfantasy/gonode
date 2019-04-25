@@ -72,7 +72,7 @@ func (this *KcpNetWorker) Connect(id string, url string, origin string) error {
 
 	conn, err := kcp.Dial(infos[0])
 	if err == nil {
-		this.doHandShake(conn, origin, url, id)
+		this.doHandShake(conn, origin, id)
 		go this.h_kcpSocket(conn)
 	}
 	return err
@@ -150,7 +150,7 @@ func (this *KcpNetWorker) Close(id string, conn net.Conn) error {
 	return conn.Close()
 }
 
-func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id string) error {
+func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -161,32 +161,20 @@ func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, url string, 
 	if err2 != nil {
 		return err2
 	}
-
-	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
-	if b {
-		this.onConn(conn, id)
-		return nil
-	} else {
-		return errors.New("handshake illegal!! " + url + "#" + id)
-	}
+	this.onConn(conn, id)
+	return nil
 }
 
-func (this *KcpNetWorker) dealHandShake(conn net.Conn, info string) error {
+func (this *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	var datas map[string]string
-	if err := jsoniter.Unmarshal([]byte(info), &datas); err != nil {
+	if err := jsoniter.Unmarshal([]byte(context), &datas); err != nil {
 		return err
 	}
 	origin, exists := datas["Origin"]
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	urlAndId := strings.Split(origin, "#")
-	if len(urlAndId) != 2 {
-		return errors.New("illegal origin data! " + origin)
-	}
-	id := urlAndId[1]
-	url := urlAndId[0]
-	id, b := this.eventListener.OnCheckNode(id, url) // let the gonode to check if the url is legal
+	id, b := this.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
 		this.onConn(conn, id)
 		fmt.Println("handshake succeed !!")

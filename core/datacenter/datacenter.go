@@ -18,6 +18,7 @@ type IDataCenter interface {
 	BindCallbacks(IDCCallbacks)
 	RegisterAndDetect(*gen_server.NodeInfo, string, int) error
 	GetNodeInfo(string) (*gen_server.NodeInfo, error)
+	GetNodeSig(string) (string, error)
 	CheckNode(string, string) bool
 }
 

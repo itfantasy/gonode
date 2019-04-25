@@ -25,8 +25,13 @@ func (this *GoNode) OnError(id string, err error) {
 	this.logger.Error("the node[" + id + "] occurs errors:" + err.Error())
 }
 
-func (this *GoNode) OnCheckNode(id string, url string) (string, bool) {
-	b := this.dc.CheckNode(id, url)
+func (this *GoNode) OnCheckNode(origin string) (string, bool) {
+	id, url, sig, err := nets.ParserOriginInfo(origin)
+	if err != nil {
+		this.logger.Info(err.Error())
+		return "", false
+	}
+	b := this.dc.CheckNode(id, sig)
 	if !b {
 		if !this.info.Pub {
 			this.logger.Info("not a inside node! give up the url:" + url + "#" + id)

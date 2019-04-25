@@ -3,6 +3,7 @@ package nets
 import (
 	"errors"
 	"net"
+	"strings"
 )
 
 type INetWorker interface {
@@ -48,4 +49,25 @@ func IsLocalIPv4(ip string) error {
 		}
 	}
 	return errors.New("illegal local IPv4!!!")
+}
+
+func CombineOriginInfo(id string, url string, sig string) string {
+	return url + "?" + id + "#" + sig
+}
+
+func ParserOriginInfo(origin string) (string, string, string, error) {
+	urlAndIdSig := strings.Split(origin, "?")
+	if len(urlAndIdSig) != 2 {
+		err := errors.New("illegal origin data! " + origin)
+		return "", "", "", err
+	}
+	idAndSig := strings.Split(urlAndIdSig[1], "#")
+	if len(idAndSig) != 2 {
+		err := errors.New("illegal origin data! " + origin)
+		return "", "", "", err
+	}
+	id := idAndSig[0]
+	url := urlAndIdSig[0]
+	sig := idAndSig[1]
+	return id, url, sig, nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
+	"github.com/itfantasy/gonode/nets/tcp"
 	"github.com/itfantasy/gonode/nets/ws"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/snowflake"
@@ -140,8 +141,18 @@ func (this *GoNode) Dispose() {
 
 }
 
+// -------------- props ------------------
+
 func (this *GoNode) Info() *gen_server.NodeInfo {
 	return this.info
+}
+
+func (this *GoNode) Self() string {
+	return this.info.Id
+}
+
+func (this *GoNode) Origin() string {
+	return nets.CombineOriginInfo(this.info.Id, this.info.Url, this.info.Sig)
 }
 
 func (this *GoNode) Logger() *log.Filter {
@@ -181,6 +192,9 @@ func (this *GoNode) netWorker(url string) nets.INetWorker {
 		case (string)(nets.KCP):
 			this.netWorkers[url] = new(kcp.KcpNetWorker)
 			break
+		case (string)(nets.TCP):
+			this.netWorkers[url] = new(tcp.TcpNetWorker)
+			break
 		}
 		this.netWorkers[url].BindEventListener(this)
 	} else {
@@ -199,8 +213,8 @@ func (this *GoNode) Listen(url string) {
 	}()
 }
 
-func (this *GoNode) Connnect(id string, url string) error {
-	return this.netWorker(url).Connect(id, url, this.info.Url+"#"+this.info.Id)
+func (this *GoNode) Connnect(nickid string, url string) error {
+	return this.netWorker(url).Connect(nickid, url, this.Origin())
 }
 
 func (this *GoNode) Send(id string, msg []byte) error {
