@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/components/etcd"
 	"github.com/itfantasy/gonode/components/redis"
 )
@@ -22,7 +23,11 @@ type IDataCenter interface {
 	CheckNode(string, string) bool
 }
 
-func NewDataCenter(comp interface{}) (IDataCenter, error) {
+func NewDataCenter(regcomp string) (IDataCenter, error) {
+	comp, err := components.NewComponent(regcomp)
+	if err != nil {
+		return nil, err
+	}
 	switch comp.(type) {
 	case *redis.Redis:
 		return NewRedisDC(comp.(*redis.Redis)), nil

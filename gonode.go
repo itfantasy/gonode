@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/core/datacenter"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
@@ -26,11 +25,8 @@ type GoNode struct {
 	info     *gen_server.NodeInfo
 	behavior gen_server.GenServer
 
-	logger  *log.Filter
-	logcomp components.IComponent
-
-	dc      datacenter.IDataCenter
-	regcomp components.IComponent
+	logger *log.Filter
+	dc     datacenter.IDataCenter
 
 	netWorkers map[string]nets.INetWorker
 
@@ -89,24 +85,15 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.info = info
 
 	// init the logger
-	if this.info.LogComp != "" {
-		logcomp, err := components.NewComponent(this.info.LogComp)
-		if err != nil {
-			fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
-		}
-		this.logcomp = logcomp
+	logger, warn := logger.NewLogger(this.info.Id, this.info.LogLevel, GONODE_LOG_CHAN, this.info.LogComp)
+	if warn != nil {
+		this.logger.Warn(warn.Error())
+		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
 	}
-	this.logger = logger.NewLogger(this.info.Id, this.info.LogLevel, GONODE_LOG_CHAN, this.logcomp)
+	this.logger = logger
 
 	// init the dc
-	regcomp, err := components.NewComponent(this.info.RegComp)
-	if err != nil {
-		fmt.Println("Initialize Faild!! Can not create the Core Register Component!!")
-		this.logger.Error(err.Error())
-		return
-	}
-	this.regcomp = regcomp
-	dc, err := datacenter.NewDataCenter(this.regcomp)
+	dc, err := datacenter.NewDataCenter(this.info.RegComp)
 	if err != nil {
 		fmt.Println("Initialize Faild!! Init the DataCenter failed!!")
 		this.logger.Error(err.Error())

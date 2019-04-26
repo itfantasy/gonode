@@ -1,25 +1,51 @@
 package logger
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/components/rabbitmq"
+	"github.com/itfantasy/gonode/utils/io"
 	log "github.com/jeanphorn/log4go"
 )
 
 var globalLogger log.Logger
 
-func NewLogger(id string, loglevel string, logchan string, logcomp components.IComponent) *log.Filter {
-	rmq, ok := logcomp.(*rabbitmq.RabbitMQ)
-	if rmq != nil && ok {
-		globalLogger = log.Logger{
-			id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmq, logchan), id},
+func NewLogger(id string, loglevel string, logchan string, logcomp string) (*log.Filter, error) {
+	var warn error = nil
+	if strings.HasPrefix(logcomp, "rabbitmq://") {
+		comp, err := components.NewComponent(logcomp)
+		if err == nil {
+			rmq, ok := comp.(*rabbitmq.RabbitMQ)
+			if rmq != nil && ok {
+				globalLogger = log.Logger{
+					id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmq, logchan), id},
+				}
+				return globalLogger[id], nil
+			} else {
+				warn = errors.New("illegal log comp type! only rabbitmq or file or empty(console logger) ... ")
+			}
+		} else {
+			warn = err
 		}
-	} else {
-		globalLogger = log.Logger{
-			id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
+	} else if strings.HasPrefix(logcomp, "file://") {
+		filePath := strings.TrimPrefix(logcomp, "file://")
+		if !io.FileExists(filePath) {
+			dir := io.FetchDirByFilePath(filePath)
+			io.MakeDir(dir)
 		}
+		globalLogger = log.Logger{
+			id: &log.Filter{getLogLevel(loglevel), log.NewFileLogWriter(filePath, true, true), id},
+		}
+		return globalLogger[id], nil
+	} else if logcomp != "" {
+		warn = errors.New("illegal log comp type! only rabbitmq or file or empty(console logger) ... ")
 	}
-	return globalLogger[id]
+	globalLogger = log.Logger{
+		id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
+	}
+	return globalLogger[id], warn
 }
 
 func getLogLevel(l string) log.Level {
