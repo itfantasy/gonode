@@ -15,7 +15,6 @@ import (
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/tcp"
 	"github.com/itfantasy/gonode/nets/ws"
-	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/snowflake"
 
 	log "github.com/jeanphorn/log4go"
@@ -24,6 +23,7 @@ import (
 type GoNode struct {
 	info     *gen_server.NodeInfo
 	behavior gen_server.GenServer
+	event    *EventHandler
 
 	logger *log.Filter
 	dc     datacenter.IDataCenter
@@ -33,43 +33,9 @@ type GoNode struct {
 	lock sync.RWMutex
 }
 
-// -------------- global ----------------
-
-var node *GoNode = nil
-
-func Node() *GoNode {
-	if node == nil {
-		node = &GoNode{}
-	}
-	return node
-}
-
-func Send(id string, msg []byte) {
-	Node().Send(id, msg)
-}
-
-func Console(obj interface{}) {
-	txt, ok := obj.(string)
-	if ok {
-		Node().Logger().Debug(txt)
-	} else {
-		msg, err := json.Encode(obj)
-		if err != nil {
-			Error("the console data format that cannot be converted!")
-		}
-		Node().Logger().Debug(msg)
-	}
-}
-
-func Error(msg string) {
-	Node().Logger().Error(msg)
-}
-
 // -------------- init ----------------
 
 func (this *GoNode) Initialize(behavior gen_server.GenServer) {
-
-	defer this.Dispose()
 
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -83,6 +49,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		return
 	}
 	this.info = info
+	this.event = newEventHandler(this)
 
 	// init the logger
 	logger, warn := logger.NewLogger(this.info.Id, this.info.LogLevel, GONODE_LOG_CHAN, this.info.LogComp)
@@ -100,7 +67,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		return
 	}
 	this.dc = dc
-	this.dc.BindCallbacks(this)
+	this.dc.BindCallbacks(this.event)
 	err2 := this.dc.RegisterAndDetect(this.info, GONODE_REG_CHAN, 5000)
 	if err2 != nil {
 		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!")
@@ -113,19 +80,18 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		this.logger.Error(err.Error())
 	}
 	this.Listen(theUrl)
-
-	this.logger.Info("node starting... " + this.info.Id)
-	this.behavior.Start()
-	select {}
-	this.logger.Error("shuting down!!!")
 }
 
 func (this *GoNode) Bind(behavior gen_server.GenServer) {
 	this.behavior = behavior
 }
 
-func (this *GoNode) Dispose() {
-
+func (this *GoNode) Sync() {
+	defer this.onDispose()
+	this.logger.Info("node starting... " + this.info.Id)
+	this.behavior.Start()
+	select {}
+	this.logger.Error("shuting down!!!")
 }
 
 // -------------- props ------------------
@@ -183,7 +149,7 @@ func (this *GoNode) netWorker(url string) nets.INetWorker {
 			this.netWorkers[url] = new(tcp.TcpNetWorker)
 			break
 		}
-		this.netWorkers[url].BindEventListener(this)
+		this.netWorkers[url].BindEventListener(this.event)
 	} else {
 		this.logger.Warn("the url has been listening!" + url)
 	}
@@ -195,7 +161,7 @@ func (this *GoNode) Listen(url string) {
 		err := this.netWorker(url).Listen(url)
 		if err != nil {
 			this.logger.Error(err.Error())
-			this.OnError(this.info.Id, err)
+			this.onError(this.info.Id, err)
 		}
 	}()
 }

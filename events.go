@@ -4,28 +4,66 @@ import (
 	"github.com/itfantasy/gonode/nets"
 )
 
-func (this *GoNode) OnConn(id string) {
+type EventHandler struct {
+	node *GoNode
+}
+
+func newEventHandler(node *GoNode) *EventHandler {
+	e := new(EventHandler)
+	e.node = node
+	return e
+}
+
+func (e *EventHandler) OnConn(id string) {
+	e.node.onConn(id)
+}
+
+func (e *EventHandler) OnMsg(id string, msg []byte) {
+	e.node.onMsg(id, msg)
+}
+
+func (e *EventHandler) OnClose(id string) {
+	e.node.onClose(id)
+}
+
+func (e *EventHandler) OnError(id string, err error) {
+	e.node.onError(id, err)
+}
+
+func (e *EventHandler) OnCheckNode(origin string) (string, bool) {
+	return e.node.onCheckNode(origin)
+}
+
+func (e *EventHandler) OnNewNode(id string) {
+	e.node.onNewNode(id)
+}
+
+func (e *EventHandler) OnDCError(err error) {
+	e.node.onDCError(err)
+}
+
+func (this *GoNode) onConn(id string) {
 	defer this.autoRecover()
 	this.logger.Info("conn to " + id + " succeed!")
 	this.behavior.OnConn(id)
 }
 
-func (this *GoNode) OnMsg(id string, msg []byte) {
+func (this *GoNode) onMsg(id string, msg []byte) {
 	defer this.autoRecover()
 	this.behavior.OnMsg(id, msg)
 }
 
-func (this *GoNode) OnClose(id string) {
+func (this *GoNode) onClose(id string) {
 	defer this.autoRecover()
 	this.behavior.OnClose(id)
 }
 
-func (this *GoNode) OnError(id string, err error) {
+func (this *GoNode) onError(id string, err error) {
 	defer this.autoRecover()
 	this.logger.Error("the node[" + id + "] occurs errors:" + err.Error())
 }
 
-func (this *GoNode) OnCheckNode(origin string) (string, bool) {
+func (this *GoNode) onCheckNode(origin string) (string, bool) {
 	b := false
 	id, url, sig, err := nets.ParserOriginInfo(origin)
 	if err == nil {
@@ -50,7 +88,7 @@ func (this *GoNode) OnCheckNode(origin string) (string, bool) {
 }
 
 // when a new node is found
-func (this *GoNode) OnNewNode(id string) {
+func (this *GoNode) onNewNode(id string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -73,6 +111,10 @@ func (this *GoNode) OnNewNode(id string) {
 	}
 }
 
-func (this *GoNode) OnDCError(err error) {
+func (this *GoNode) onDCError(err error) {
 	this.logger.Error(err.Error())
+}
+
+func (this *GoNode) onDispose() {
+
 }
