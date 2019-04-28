@@ -46,7 +46,16 @@ func (this *WSNetWorker) h_webSocket(conn *websocket.Conn) {
 func (this *WSNetWorker) Connect(id string, url string, origin string) error {
 	conn, err := websocket.Dial(url, "tcp", origin)
 	if err == nil {
-		go this.h_webSocket(conn)
+		this.onConn(conn, id)
+		var msg []byte
+		for {
+			err := websocket.Message.Receive(conn, &msg)
+			if err != nil {
+				this.onError(conn, err)
+				break
+			}
+			this.onMsg(conn, msg)
+		}
 	}
 	return err
 }

@@ -2,7 +2,7 @@ package gonode
 
 const (
 	// reg channel
-	GONODE_REG_CHAN string = "gonode_reg"
+	CHAN_REG string = "gonode_reg"
 	// log channel
-	GONODE_LOG_CHAN string = "gonode_log"
+	CHAN_LOG string = "gonode_log"
 )

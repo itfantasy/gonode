@@ -52,7 +52,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	this.event = newEventHandler(this)
 
 	// init the logger
-	logger, warn := logger.NewLogger(this.info.Id, this.info.LogLevel, GONODE_LOG_CHAN, this.info.LogComp)
+	logger, warn := logger.NewLogger(this.info.Id, this.info.LogLevel, CHAN_LOG, this.info.LogComp)
 	if warn != nil {
 		this.logger.Warn(warn.Error())
 		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
@@ -68,7 +68,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 	}
 	this.dc = dc
 	this.dc.BindCallbacks(this.event)
-	err2 := this.dc.RegisterAndDetect(this.info, GONODE_REG_CHAN, 5000)
+	err2 := this.dc.RegisterAndDetect(this.info, CHAN_REG, 5000)
 	if err2 != nil {
 		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!")
 		this.logger.Error(err2.Error())
@@ -167,6 +167,11 @@ func (this *GoNode) Listen(url string) {
 }
 
 func (this *GoNode) Connnect(nickid string, url string) error {
+	exist := nets.IsIdExists(nickid)
+	if exist {
+		this.logger.Info("there is a same id in local record:" + url + "#" + nickid)
+		return nil
+	}
 	return this.netWorker(url).Connect(nickid, url, this.Origin())
 }
 

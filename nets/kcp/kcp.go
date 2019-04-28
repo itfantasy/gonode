@@ -66,7 +66,6 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 }
 
 func (this *KcpNetWorker) Connect(id string, url string, origin string) error {
-
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
 
