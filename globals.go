@@ -17,16 +17,12 @@ func init() {
 	}
 }
 
-func Launch(behavior gen_server.GenServer) {
-	node.Initialize(behavior)
+func Launch() {
+	node.Launch()
 }
 
 func Bind(behavior gen_server.GenServer) {
 	node.Bind(behavior)
-}
-
-func Sync() {
-	node.Sync()
 }
 
 func Listen(url string) {
@@ -69,7 +65,3 @@ func LogError(err error) {
 func Info() *gen_server.NodeInfo {
 	return node.Info()
 }
-
-// 添加一个Node管理器，仿照Log4go
-// 补充部分全局方法，允许gonode直调
-// 隐藏events中的On系方法，尽量不要让上层看到

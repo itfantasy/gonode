@@ -10,9 +10,11 @@ import (
 	log "github.com/jeanphorn/log4go"
 )
 
+type Logger = log.Filter
+
 var globalLogger log.Logger
 
-func NewLogger(id string, loglevel string, logchan string, logcomp string) (*log.Filter, error) {
+func NewLogger(id string, loglevel string, logchan string, logcomp string) (*Logger, error) {
 	var warn error = nil
 	if strings.HasPrefix(logcomp, "rabbitmq://") {
 		comp, err := components.NewComponent(logcomp)

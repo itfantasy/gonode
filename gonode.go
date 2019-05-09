@@ -10,14 +10,13 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/core/datacenter"
+	"github.com/itfantasy/gonode/core/erl"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/tcp"
 	"github.com/itfantasy/gonode/nets/ws"
 	"github.com/itfantasy/gonode/utils/snowflake"
-
-	log "github.com/jeanphorn/log4go"
 )
 
 type GoNode struct {
@@ -25,7 +24,7 @@ type GoNode struct {
 	behavior gen_server.GenServer
 	event    *EventHandler
 
-	logger *log.Filter
+	logger *logger.Logger
 	dc     datacenter.IDataCenter
 
 	netWorkers map[string]nets.INetWorker
@@ -35,14 +34,22 @@ type GoNode struct {
 
 // -------------- init ----------------
 
-func (this *GoNode) Initialize(behavior gen_server.GenServer) {
+func (this *GoNode) Bind(behavior gen_server.GenServer) {
+	this.behavior = behavior
+}
+
+func (this *GoNode) Launch() {
+	defer this.onDispose()
 
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	nets.InitKvvk()
 
 	// get the node self info config
-	this.behavior = behavior
+	if this.behavior == nil {
+		fmt.Println("Initialize Faild!! You must bind a server behavior at first!!")
+		return
+	}
 	info := this.behavior.Setup()
 	if info == nil {
 		fmt.Println("Initialize Faild!! Can not setup an correct nodeinfo!!")
@@ -58,6 +65,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
 	}
 	this.logger = logger
+	erl.SetLogger(this.logger)
 
 	// init the dc
 	dc, err := datacenter.NewDataCenter(this.info.RegComp)
@@ -80,14 +88,7 @@ func (this *GoNode) Initialize(behavior gen_server.GenServer) {
 		this.logger.Error(err.Error())
 	}
 	this.Listen(theUrl)
-}
 
-func (this *GoNode) Bind(behavior gen_server.GenServer) {
-	this.behavior = behavior
-}
-
-func (this *GoNode) Sync() {
-	defer this.onDispose()
 	this.logger.Info("node starting... " + this.info.Id)
 	this.behavior.Start()
 	select {}
@@ -108,7 +109,7 @@ func (this *GoNode) Origin() string {
 	return nets.CombineOriginInfo(this.info.Id, this.info.Url, this.info.Sig)
 }
 
-func (this *GoNode) Logger() *log.Filter {
+func (this *GoNode) Logger() *logger.Logger {
 	return this.logger
 }
 
@@ -205,9 +206,8 @@ func (this *GoNode) checkTargetId(id string) bool {
 // -------------- other ----------------
 
 func (this *GoNode) autoRecover() {
-	err := recover()
-	if err != nil {
-		this.logger.Error("auto recovering..." + fmt.Sprint(err))
-		debug.PrintStack()
+	if err := recover(); err != nil {
+		this.logger.Error("auto recovering..." + fmt.Sprint(err) +
+			"\r\n=============== - CallStackInfo - =============== \r\n" + string(debug.Stack()))
 	}
 }

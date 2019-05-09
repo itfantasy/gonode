@@ -3,6 +3,7 @@ package erl
 import (
 	"sync"
 
+	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/utils/snowflake"
 )
 
@@ -65,4 +66,10 @@ func get(pid int64) (*Actor, bool) {
 
 func remove(pid int64) {
 	actors.Delete(pid)
+}
+
+var elogger *logger.Logger
+
+func SetLogger(log *logger.Logger) {
+	elogger = log
 }
