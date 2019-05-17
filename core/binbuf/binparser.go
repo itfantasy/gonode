@@ -1,27 +1,27 @@
-package gnbuffers
+package binbuf
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
 
-	"github.com/itfantasy/gonode/gnbuffers/gntypes"
+	"github.com/itfantasy/gonode/core/binbuf/types"
 )
 
-type GnParser struct {
+type BinParser struct {
 	buffer      []byte
 	bytesBuffer *bytes.Buffer
 }
 
-func BuildParser(buffer []byte, offset int) *GnParser {
-	parser := new(GnParser)
+func BuildParser(buffer []byte, offset int) *BinParser {
+	parser := new(BinParser)
 	parser.buffer = buffer
 	parser.bytesBuffer = bytes.NewBuffer(parser.buffer)
 	parser.bytesBuffer.Grow(offset)
 	return parser
 }
 
-func (this *GnParser) Byte() (byte, error) {
+func (this *BinParser) Byte() (byte, error) {
 	var ret byte
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -30,11 +30,11 @@ func (this *GnParser) Byte() (byte, error) {
 	return ret, nil
 }
 
-func (this *GnParser) Bytes() []byte {
+func (this *BinParser) Bytes() []byte {
 	return this.buffer
 }
 
-func (this *GnParser) Bool() (bool, error) {
+func (this *BinParser) Bool() (bool, error) {
 	var ret bool
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -43,7 +43,7 @@ func (this *GnParser) Bool() (bool, error) {
 	return ret, nil
 }
 
-func (this *GnParser) Short() (int16, error) {
+func (this *BinParser) Short() (int16, error) {
 	var ret int16
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -52,7 +52,7 @@ func (this *GnParser) Short() (int16, error) {
 	return ret, nil
 }
 
-func (this *GnParser) Int() (int32, error) {
+func (this *BinParser) Int() (int32, error) {
 	var ret int32
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -61,7 +61,7 @@ func (this *GnParser) Int() (int32, error) {
 	return ret, nil
 }
 
-func (this *GnParser) Long() (int64, error) {
+func (this *BinParser) Long() (int64, error) {
 	var ret int64
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -70,7 +70,7 @@ func (this *GnParser) Long() (int64, error) {
 	return ret, nil
 }
 
-func (this *GnParser) String() (string, error) {
+func (this *BinParser) String() (string, error) {
 	length, err := this.Int() // get the string len
 	if err != nil {
 		return "", err
@@ -85,7 +85,7 @@ func (this *GnParser) String() (string, error) {
 	return string(tempBuffer), nil
 }
 
-func (this *GnParser) Float() (float32, error) {
+func (this *BinParser) Float() (float32, error) {
 	var ret float32
 	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
@@ -94,7 +94,7 @@ func (this *GnParser) Float() (float32, error) {
 	return ret, nil
 }
 
-func (this *GnParser) Ints() ([]int32, error) {
+func (this *BinParser) Ints() ([]int32, error) {
 	length, err := this.Int() // get the []int32 len
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (this *GnParser) Ints() ([]int32, error) {
 	return array, nil
 }
 
-func (this *GnParser) Array() ([]interface{}, error) {
+func (this *BinParser) Array() ([]interface{}, error) {
 	length, err := this.Int() // get the []int32 len
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (this *GnParser) Array() ([]interface{}, error) {
 	return array, nil
 }
 
-func (this *GnParser) Hash() (map[interface{}]interface{}, error) {
+func (this *BinParser) Hash() (map[interface{}]interface{}, error) {
 	length, err := this.Int() // get the hash len
 	if err != nil {
 		return nil, err
@@ -149,33 +149,33 @@ func (this *GnParser) Hash() (map[interface{}]interface{}, error) {
 	return hash, nil
 }
 
-func (this *GnParser) Object() (interface{}, error) {
+func (this *BinParser) Object() (interface{}, error) {
 	c, err := this.Byte()
 	if err != nil {
 		return nil, err
 	}
 	switch c {
-	case gntypes.Byte:
+	case types.Byte:
 		return this.Byte()
-	case gntypes.Bool:
+	case types.Bool:
 		return this.Bool()
-	case gntypes.Short:
+	case types.Short:
 		return this.Short()
-	case gntypes.Int:
+	case types.Int:
 		return this.Int()
-	case gntypes.Long:
+	case types.Long:
 		return this.Long()
-	case gntypes.String:
+	case types.String:
 		return this.String()
-	case gntypes.Float:
+	case types.Float:
 		return this.Float()
-	case gntypes.Ints:
+	case types.Ints:
 		return this.Ints()
-	case gntypes.Array:
+	case types.Array:
 		return this.Array()
-	case gntypes.Hash:
+	case types.Hash:
 		return this.Hash()
-	case gntypes.Null:
+	case types.Null:
 		if none, err := this.Byte(); err != nil {
 			return nil, err
 		} else if none != byte(0) {

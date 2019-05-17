@@ -65,3 +65,7 @@ func LogError(err error) {
 func Info() *gen_server.NodeInfo {
 	return node.Info()
 }
+
+func Self() string {
+	return node.Self()
+}

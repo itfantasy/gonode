@@ -1,4 +1,4 @@
-package gntypes
+package types
 
 const (
 	Byte   byte = 'b'
