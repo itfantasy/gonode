@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	PCK_MIN_SIZE int   = 6        // |--- header 0xAA5555AA 4bytes ---|--- length 2 bytes ---|--- other datas --- ....
-	PCK_HEADER   int32 = 0x676f21 // go!
+	PCK_MIN_SIZE int   = 6          // |--- header 4bytes ---|--- length 2 bytes ---|--- other datas --- ....
+	PCK_HEADER   int32 = 0x2123676f // !#go
 )
 
 type TcpNetWorker struct {
@@ -23,9 +24,10 @@ type TcpNetWorker struct {
 
 func (this *TcpNetWorker) Listen(url string) error {
 
+	go nets.AutoPing(this)
+
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
-
 	tcpAddr, err := net.ResolveTCPAddr("tcp", infos[0])
 	if err != nil {
 		return err
@@ -85,32 +87,6 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			}
 		}
 	}
-
-	/*
-		var buf [4096]byte // the rev buf
-		for {
-			n, err := conn.Read(buf[0:])
-			if err != nil {
-				this.onError(conn, err)
-				break
-			}
-			if n > 0 {
-				id, exists := nets.GetInfoIdByConn(conn)
-				var temp []byte = make([]byte, 0, n)
-				datas := bytes.NewBuffer(temp)
-				datas.Write(buf[0:n])
-				if exists {
-					this.onMsg(conn, id, datas.Bytes())
-				} else {
-					if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
-						this.onError(conn, err)
-					}
-				}
-			} else {
-				this.onError(conn, errors.New("receive no datas!!"))
-			}
-		}
-	*/
 }
 
 func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
@@ -160,6 +136,18 @@ func (this *TcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
+	nets.ResetConnState(id)
+	if msg[0] == 35 { // '#'
+		strmsg := string(msg)
+		if strmsg == "#pong" {
+			fmt.Println("receive pong from.." + id)
+			return
+		} else if strmsg == "#ping" {
+			fmt.Println("re sending pong to..." + id)
+			go this.Send(conn, []byte("#pong")) // return the pong pck
+			return
+		}
+	}
 	this.eventListener.OnMsg(id, msg)
 }
 
