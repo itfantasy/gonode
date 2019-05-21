@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -13,18 +12,13 @@ import (
 	"github.com/json-iterator/go"
 )
 
-const (
-	PCK_MIN_SIZE int   = 6          // |--- header 4bytes ---|--- length 2 bytes ---|--- other datas --- ....
-	PCK_HEADER   int32 = 0x2123676f // !#go
-)
-
 type TcpNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
 func (this *TcpNetWorker) Listen(url string) error {
 
-	go nets.AutoPing(this)
+	//go nets.AutoPing(this)
 
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
@@ -49,44 +43,97 @@ func (this *TcpNetWorker) Listen(url string) error {
 }
 
 func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
-	scanner := bufio.NewScanner(conn)
-	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if len(data) > PCK_MIN_SIZE {
-			if !atEOF {
-				parser := binbuf.BuildParser(data, 0)
-				header, err := parser.Int()
-				if err == nil && header == PCK_HEADER {
-					length, err2 := parser.Short()
-					if err2 == nil {
-						needlen := int(length) + PCK_MIN_SIZE
-						if needlen <= len(data) { // parser a whole package
-							return needlen, data[:needlen], nil
-						}
-					}
-				}
-			}
-		}
-		return
-	})
-	for scanner.Scan() {
-		err := scanner.Err()
+	buf := make([]byte, 8192, 8192)
+	rcvbuf := NewTcpBuffer(buf)
+	defer func() {
+		rcvbuf.Dispose()
+	}()
+	for {
+		n, err := conn.Read(rcvbuf.Buffer())
 		if err != nil {
 			this.onError(conn, err)
 			break
 		}
-		id, exists := nets.GetInfoIdByConn(conn)
-		buf := scanner.Bytes()
-		var temp []byte = make([]byte, 0, len(buf)-PCK_MIN_SIZE)
-		datas := bytes.NewBuffer(temp)
-		datas.Write(buf[PCK_MIN_SIZE:])
-		if exists {
-			this.onMsg(conn, id, datas.Bytes())
-		} else {
-			if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
-				this.onError(conn, err)
+		if n > 0 {
+			rcvbuf.AddDataLen(n)
+			for rcvbuf.Count() > PCK_MIN_SIZE {
+				parser := binbuf.BuildParser(rcvbuf.Slice(), 0)
+				head, err := parser.Int()
+				if err != nil || head != PCK_HEADER {
+					rcvbuf.Clear()
+					break
+				}
+				l, err := parser.Short()
+				length := int(l)
+				if err != nil {
+					rcvbuf.Clear()
+					break
+				} else if length > rcvbuf.Count() {
+					break
+				}
+				id, exists := nets.GetInfoIdByConn(conn)
+				src := rcvbuf.Slice()[PCK_MIN_SIZE : PCK_MIN_SIZE+length]
+				var temp []byte = make([]byte, 0, length)
+				datas := bytes.NewBuffer(temp)
+				datas.Write(src)
+				rcvbuf.DeleteData(length + PCK_MIN_SIZE)
+				if exists {
+					this.onMsg(conn, id, datas.Bytes())
+				} else {
+					if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
+						this.onError(conn, err)
+						return
+					}
+				}
+				temp = nil // dispose the temp buffer
 			}
+			rcvbuf.Reset()
+		} else {
+			this.onError(conn, errors.New("receive no datas!!"))
 		}
 	}
+
+	// or you can use the bufio.Scanner like this
+	/*
+		scanner := bufio.NewScanner(conn)
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			if len(data) > PCK_MIN_SIZE {
+				if !atEOF {
+					parser := binbuf.BuildParser(data, 0)
+					header, err := parser.Int()
+					if err == nil && header == PCK_HEADER {
+						length, err2 := parser.Short()
+						if err2 == nil {
+							needlen := int(length) + PCK_MIN_SIZE
+							if needlen <= len(data) { // parser a whole package
+								return needlen, data[:needlen], nil
+							}
+						}
+					}
+				}
+			}
+			return
+		})
+		for scanner.Scan() {
+			err := scanner.Err()
+			if err != nil {
+				this.onError(conn, err)
+				break
+			}
+			id, exists := nets.GetInfoIdByConn(conn)
+			buf := scanner.Bytes()
+			var temp []byte = make([]byte, 0, len(buf)-PCK_MIN_SIZE)
+			datas := bytes.NewBuffer(temp)
+			datas.Write(buf[PCK_MIN_SIZE:])
+			if exists {
+				this.onMsg(conn, id, datas.Bytes())
+			} else {
+				if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
+					this.onError(conn, err)
+				}
+			}
+		}
+	*/
 }
 
 func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
@@ -140,7 +187,7 @@ func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	if msg[0] == 35 { // '#'
 		strmsg := string(msg)
 		if strmsg == "#pong" {
-			fmt.Println("receive pong from.." + id)
+			fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
 			return
 		} else if strmsg == "#ping" {
 			fmt.Println("re sending pong to..." + id)

@@ -39,7 +39,10 @@ func (this *KcpNetWorker) Listen(url string) error {
 }
 
 func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
-	var buf [4096]byte // the rev buf
+	buf := make([]byte, 4096, 4096) // the rev buf
+	defer func() {
+		buf = nil
+	}()
 	for {
 		n, err := conn.Read(buf[0:])
 		if err != nil {
@@ -100,7 +103,7 @@ func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	if msg[0] == 35 { // '#'
 		strmsg := string(msg)
 		if strmsg == "#pong" {
-			fmt.Println("receive pong from.." + id)
+			fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
 			return
 		} else if strmsg == "#ping" {
 			fmt.Println("re sending pong to..." + id)
