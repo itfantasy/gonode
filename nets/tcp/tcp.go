@@ -18,7 +18,7 @@ type TcpNetWorker struct {
 
 func (this *TcpNetWorker) Listen(url string) error {
 
-	//go nets.AutoPing(this)
+	go nets.AutoPing(this)
 
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
