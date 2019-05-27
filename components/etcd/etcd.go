@@ -24,14 +24,14 @@ type Etcd struct {
 }
 
 func NewEtcd() *Etcd {
-	this := new(Etcd)
-	this.opts = common.NewCompOptions()
-	this.opts.Set(OPT_CONNTIMEOUT, 5*time.Second)
-	this.opts.Set(OPT_RWTIMEOUT, time.Second)
-	return this
+	e := new(Etcd)
+	e.opts = common.NewCompOptions()
+	e.opts.Set(OPT_CONNTIMEOUT, 5*time.Second)
+	e.opts.Set(OPT_RWTIMEOUT, time.Second)
+	return e
 }
 
-func (this *Etcd) Conn(urls string, root string) error {
+func (e *Etcd) Conn(urls string, root string) error {
 	urlInfos := strings.Split(urls, ";")
 	endpoints := make([]string, 0, len(urlInfos))
 	for _, v := range urlInfos {
@@ -39,36 +39,36 @@ func (this *Etcd) Conn(urls string, root string) error {
 	}
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   endpoints,
-		DialTimeout: this.opts.Get(OPT_CONNTIMEOUT).(time.Duration),
+		DialTimeout: e.opts.Get(OPT_CONNTIMEOUT).(time.Duration),
 	})
 	if err != nil {
 		return err
 	}
-	this.cli = cli
-	this.root = root
+	e.cli = cli
+	e.root = root
 	return nil
 }
 
-func (this *Etcd) Close() {
-	if this.cli != nil {
-		this.cli.Close()
+func (e *Etcd) Close() {
+	if e.cli != nil {
+		e.cli.Close()
 	}
 }
 
-func (this *Etcd) SetAuthor(user string, pass string) {
+func (e *Etcd) SetAuthor(user string, pass string) {
 
 }
 
-func (this *Etcd) SetOption(key string, val interface{}) {
-	this.opts.Set(key, val)
+func (e *Etcd) SetOption(key string, val interface{}) {
+	e.opts.Set(key, val)
 }
 
-func (this *Etcd) Set(path string, val string) error {
-	if this.root != "" {
-		path = this.root + "/" + path
+func (e *Etcd) Set(path string, val string) error {
+	if e.root != "" {
+		path = e.root + "/" + path
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
-	_, err := this.cli.Put(ctx, path, val)
+	ctx, cancel := context.WithTimeout(context.Background(), e.opts.Get(OPT_RWTIMEOUT).(time.Duration))
+	_, err := e.cli.Put(ctx, path, val)
 	cancel()
 	if err != nil {
 		return err
@@ -76,12 +76,12 @@ func (this *Etcd) Set(path string, val string) error {
 	return nil
 }
 
-func (this *Etcd) Get(path string) (string, error) {
-	if this.root != "" {
-		path = this.root + "/" + path
+func (e *Etcd) Get(path string) (string, error) {
+	if e.root != "" {
+		path = e.root + "/" + path
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
-	resp, err := this.cli.Get(ctx, path)
+	ctx, cancel := context.WithTimeout(context.Background(), e.opts.Get(OPT_RWTIMEOUT).(time.Duration))
+	resp, err := e.cli.Get(ctx, path)
 	cancel()
 	if err != nil {
 		return "", err
@@ -94,12 +94,12 @@ func (this *Etcd) Get(path string) (string, error) {
 	return "", errors.New("can not find the path! " + path)
 }
 
-func (this *Etcd) Gets(path string) (map[string]string, error) {
-	if this.root != "" {
-		path = this.root + "/" + path
+func (e *Etcd) Gets(path string) (map[string]string, error) {
+	if e.root != "" {
+		path = e.root + "/" + path
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), this.opts.Get(OPT_RWTIMEOUT).(time.Duration))
-	resp, err := this.cli.Get(ctx, path, clientv3.WithPrefix())
+	ctx, cancel := context.WithTimeout(context.Background(), e.opts.Get(OPT_RWTIMEOUT).(time.Duration))
+	resp, err := e.cli.Get(ctx, path, clientv3.WithPrefix())
 	cancel()
 	if err != nil {
 		return nil, err
@@ -107,39 +107,39 @@ func (this *Etcd) Gets(path string) (map[string]string, error) {
 	ret := make(map[string]string)
 	for _, kv := range resp.Kvs {
 		key := string(kv.Key)
-		if this.root != "" {
-			key = strings.TrimPrefix(key, this.root+"/")
+		if e.root != "" {
+			key = strings.TrimPrefix(key, e.root+"/")
 		}
 		ret[key] = string(kv.Value)
 	}
 	return ret, nil
 }
 
-func (this *Etcd) Publish(path string, val string) error {
-	return this.Set(path, val)
+func (e *Etcd) Publish(path string, val string) error {
+	return e.Set(path, val)
 }
 
-func (this *Etcd) Subscribe(path string) {
-	if this.root != "" {
-		path = this.root + "/" + path
+func (e *Etcd) Subscribe(path string) {
+	if e.root != "" {
+		path = e.root + "/" + path
 	}
-	ch := this.cli.Watch(context.Background(), path, clientv3.WithPrefix())
-	this.subscriber.OnSubscribe(strings.TrimPrefix(path, this.root+"/"))
+	ch := e.cli.Watch(context.Background(), path, clientv3.WithPrefix())
+	e.subscriber.OnSubscribe(strings.TrimPrefix(path, e.root+"/"))
 	for resp := range ch {
 		for _, ev := range resp.Events {
 			if ev.Type == mvccpb.PUT {
-				this.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), this.root+"/"), string(ev.Kv.Value))
+				e.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), e.root+"/"), string(ev.Kv.Value))
 			} else if ev.Type == mvccpb.DELETE {
-				this.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), this.root+"/"), "")
+				e.subscriber.OnSubMessage(strings.TrimPrefix(string(ev.Kv.Key), e.root+"/"), "")
 			}
 		}
 	}
 }
 
-func (this *Etcd) BindSubscriber(subscriber common.ISubscriber) {
-	this.subscriber = subscriber
+func (e *Etcd) BindSubscriber(subscriber common.ISubscriber) {
+	e.subscriber = subscriber
 }
 
-func (this *Etcd) Client() *clientv3.Client {
-	return this.cli
+func (e *Etcd) Client() *clientv3.Client {
+	return e.cli
 }

@@ -34,88 +34,88 @@ type GoNode struct {
 
 // -------------- init ----------------
 
-func (this *GoNode) Bind(behavior gen_server.GenServer) {
-	this.behavior = behavior
+func (g *GoNode) Bind(behavior gen_server.GenServer) {
+	g.behavior = behavior
 }
 
-func (this *GoNode) Launch() {
-	defer this.onDispose()
+func (g *GoNode) Launch() {
+	defer g.onDispose()
 
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	nets.InitKvvk()
 
 	// get the node self info config
-	if this.behavior == nil {
+	if g.behavior == nil {
 		fmt.Println("Initialize Faild!! You must bind a server behavior at first!!")
 		return
 	}
-	info := this.behavior.Setup()
+	info := g.behavior.Setup()
 	if info == nil {
 		fmt.Println("Initialize Faild!! Can not setup an correct nodeinfo!!")
 		return
 	}
-	this.info = info
-	this.event = newEventHandler(this)
+	g.info = info
+	g.event = newEventHandler(g)
 
 	// init the logger
-	logger, warn := logger.NewLogger(this.info.Id, this.info.LogLevel, CHAN_LOG, this.info.LogComp)
+	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, CHAN_LOG, g.info.LogComp)
 	if warn != nil {
-		this.logger.Warn(warn.Error())
+		g.logger.Warn(warn.Error())
 		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
 	}
-	this.logger = logger
-	erl.SetLogger(this.logger)
+	g.logger = logger
+	erl.SetLogger(g.logger)
 
 	// init the dc
-	dc, err := datacenter.NewDataCenter(this.info.RegComp)
+	dc, err := datacenter.NewDataCenter(g.info.RegComp)
 	if err != nil {
 		fmt.Println("Initialize Faild!! Init the DataCenter failed!!")
-		this.logger.Error(err.Error())
+		g.logger.Error(err.Error())
 		return
 	}
-	this.dc = dc
-	this.dc.BindCallbacks(this.event)
-	err2 := this.dc.RegisterAndDetect(this.info, CHAN_REG, 5000)
+	g.dc = dc
+	g.dc.BindCallbacks(g.event)
+	err2 := g.dc.RegisterAndDetect(g.info, CHAN_REG, 5000)
 	if err2 != nil {
 		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!")
-		this.logger.Error(err2.Error())
+		g.logger.Error(err2.Error())
 	}
 
-	theUrl, err := this.getListenUrl(this.info.Url)
+	theUrl, err := g.getListenUrl(g.info.Url)
 	if err != nil {
 		fmt.Println("Initialize Faild!! Can not parse the url!!")
-		this.logger.Error(err.Error())
+		g.logger.Error(err.Error())
 	}
-	this.Listen(theUrl)
+	g.Listen(theUrl)
 
-	this.logger.Info("node starting... " + this.info.Id)
-	this.behavior.Start()
+	g.logger.Info("node starting... " + g.info.Id)
+	g.behavior.Start()
 	select {}
-	this.logger.Error("shuting down!!!")
+	g.logger.Error("shuting down!!!")
 }
 
 // -------------- props ------------------
 
-func (this *GoNode) Info() *gen_server.NodeInfo {
-	return this.info
+func (g *GoNode) Info() *gen_server.NodeInfo {
+	return g.info
 }
 
-func (this *GoNode) Self() string {
-	return this.info.Id
+func (g *GoNode) Self() string {
+	return g.info.Id
 }
 
-func (this *GoNode) Origin() string {
-	return nets.CombineOriginInfo(this.info.Id, this.info.Url, this.info.Sig)
+func (g *GoNode) Origin() string {
+	return nets.CombineOriginInfo(g.info.Id, g.info.Url, g.info.Sig)
 }
 
-func (this *GoNode) Logger() *logger.Logger {
-	return this.logger
+func (g *GoNode) Logger() *logger.Logger {
+	return g.logger
 }
 
 // -------------- net ------------------
 
-func (this *GoNode) getListenUrl(url string) (string, error) {
+func (g *GoNode) getListenUrl(url string) (string, error) {
 	infos := strings.Split(url, "://") // get the header of protocol
 	if len(infos) != 2 {
 		return "", errors.New("illegal url!" + url)
@@ -125,58 +125,58 @@ func (this *GoNode) getListenUrl(url string) (string, error) {
 	if len(ipAndPort) != 2 {
 		return "", errors.New("illegal url!" + url)
 	}
-	if !this.info.Pub {
-		return this.info.Url, nil
+	if !g.info.Pub {
+		return g.info.Url, nil
 	}
 	return proto + "://" + "0.0.0.0" + ":" + ipAndPort[1], nil
 }
 
-func (this *GoNode) netWorker(url string) nets.INetWorker {
-	if this.netWorkers == nil {
-		this.netWorkers = make(map[string]nets.INetWorker)
+func (g *GoNode) netWorker(url string) nets.INetWorker {
+	if g.netWorkers == nil {
+		g.netWorkers = make(map[string]nets.INetWorker)
 	}
 	infos := strings.Split(url, "://") // get the header of protocol
 	proto := infos[0]
-	_, exists := this.netWorkers[url]
+	_, exists := g.netWorkers[url]
 	if !exists {
 		switch proto {
 		case (string)(nets.WS):
-			this.netWorkers[url] = new(ws.WSNetWorker)
+			g.netWorkers[url] = new(ws.WSNetWorker)
 			break
 		case (string)(nets.KCP):
-			this.netWorkers[url] = new(kcp.KcpNetWorker)
+			g.netWorkers[url] = new(kcp.KcpNetWorker)
 			break
 		case (string)(nets.TCP):
-			this.netWorkers[url] = new(tcp.TcpNetWorker)
+			g.netWorkers[url] = new(tcp.TcpNetWorker)
 			break
 		}
-		this.netWorkers[url].BindEventListener(this.event)
+		g.netWorkers[url].BindEventListener(g.event)
 	} else {
-		this.logger.Warn("the url has been listening!" + url)
+		g.logger.Warn("the url has been listening!" + url)
 	}
-	return this.netWorkers[url]
+	return g.netWorkers[url]
 }
 
-func (this *GoNode) Listen(url string) {
+func (g *GoNode) Listen(url string) {
 	go func() {
-		err := this.netWorker(url).Listen(url)
+		err := g.netWorker(url).Listen(url)
 		if err != nil {
-			this.logger.Error(err.Error())
-			this.onError(this.info.Id, err)
+			g.logger.Error(err.Error())
+			g.onError(g.info.Id, err)
 		}
 	}()
 }
 
-func (this *GoNode) Connnect(nickid string, url string) error {
+func (g *GoNode) Connnect(nickid string, url string) error {
 	exist := nets.IsIdExists(nickid)
 	if exist {
-		this.logger.Info("there is a same id in local record:" + url + "#" + nickid)
+		g.logger.Info("there is a same id in local record:" + url + "#" + nickid)
 		return nil
 	}
-	return this.netWorker(url).Connect(nickid, url, this.Origin())
+	return g.netWorker(url).Connect(nickid, url, g.Origin())
 }
 
-func (this *GoNode) Send(id string, msg []byte) error {
+func (g *GoNode) Send(id string, msg []byte) error {
 	conn, _, netWorker, exist := nets.GetInfoConnById(id)
 	if !exist {
 		return errors.New("there is not the id in local record!")
@@ -184,17 +184,17 @@ func (this *GoNode) Send(id string, msg []byte) error {
 	return netWorker.Send(conn, msg)
 }
 
-func (this *GoNode) GetAllConnIds() []string {
+func (g *GoNode) GetAllConnIds() []string {
 	return nets.GetAllConnIds()
 }
 
-func (this *GoNode) randomCntId() string {
+func (g *GoNode) randomCntId() string {
 	return "cnt-" + snowflake.Generate()
 }
 
-func (this *GoNode) checkTargetId(id string) bool {
+func (g *GoNode) checkTargetId(id string) bool {
 	label := strings.Split(id, "-")[0]
-	backEnds := strings.Split(this.info.BackEnds, ",")
+	backEnds := strings.Split(g.info.BackEnds, ",")
 	for _, item := range backEnds {
 		if item == label {
 			return true
@@ -205,9 +205,9 @@ func (this *GoNode) checkTargetId(id string) bool {
 
 // -------------- other ----------------
 
-func (this *GoNode) autoRecover() {
+func (g *GoNode) autoRecover() {
 	if err := recover(); err != nil {
-		this.logger.Error("auto recovering..." + fmt.Sprint(err) +
+		g.logger.Error("auto recovering..." + fmt.Sprint(err) +
 			"\r\n=============== - CallStackInfo - =============== \r\n" + string(debug.Stack()))
 	}
 }

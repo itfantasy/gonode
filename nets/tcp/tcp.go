@@ -16,9 +16,9 @@ type TcpNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
-func (this *TcpNetWorker) Listen(url string) error {
+func (t *TcpNetWorker) Listen(url string) error {
 
-	go nets.AutoPing(this)
+	go nets.AutoPing(t)
 
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
@@ -34,15 +34,15 @@ func (this *TcpNetWorker) Listen(url string) error {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			this.onError(conn, err)
+			t.onError(conn, err)
 			continue
 		}
-		go this.h_tcpSocket(conn)
+		go t.h_tcpSocket(conn)
 	}
 	return nil
 }
 
-func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
+func (t *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 	buf := make([]byte, 8192, 8192)
 	rcvbuf := NewTcpBuffer(buf)
 	defer func() {
@@ -51,7 +51,7 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 	for {
 		n, err := conn.Read(rcvbuf.Buffer())
 		if err != nil {
-			this.onError(conn, err)
+			t.onError(conn, err)
 			break
 		}
 		if n > 0 {
@@ -78,10 +78,10 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 				datas.Write(src)
 				rcvbuf.DeleteData(length + PCK_MIN_SIZE)
 				if exists {
-					this.onMsg(conn, id, datas.Bytes())
+					t.onMsg(conn, id, datas.Bytes())
 				} else {
-					if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
-						this.onError(conn, err)
+					if err := t.dealHandShake(conn, string(datas.Bytes())); err != nil {
+						t.onError(conn, err)
 						return
 					}
 				}
@@ -89,11 +89,11 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			}
 			rcvbuf.Reset()
 		} else {
-			this.onError(conn, errors.New("receive no datas!!"))
+			t.onError(conn, errors.New("receive no datas!!"))
 		}
 	}
 
-	// or you can use the bufio.Scanner like this
+	// or you can use the bufio.Scanner like t
 	/*
 		scanner := bufio.NewScanner(conn)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -117,7 +117,7 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 		for scanner.Scan() {
 			err := scanner.Err()
 			if err != nil {
-				this.onError(conn, err)
+				t.onError(conn, err)
 				break
 			}
 			id, exists := nets.GetInfoIdByConn(conn)
@@ -126,17 +126,17 @@ func (this *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			datas := bytes.NewBuffer(temp)
 			datas.Write(buf[PCK_MIN_SIZE:])
 			if exists {
-				this.onMsg(conn, id, datas.Bytes())
+				t.onMsg(conn, id, datas.Bytes())
 			} else {
-				if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
-					this.onError(conn, err)
+				if err := t.dealHandShake(conn, string(datas.Bytes())); err != nil {
+					t.onError(conn, err)
 				}
 			}
 		}
 	*/
 }
 
-func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
+func (t *TcpNetWorker) Connect(id string, url string, origin string) error {
 
 	theUrl := strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
@@ -148,13 +148,13 @@ func (this *TcpNetWorker) Connect(id string, url string, origin string) error {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err == nil {
-		this.doHandShake(conn, origin, url, id)
-		go this.h_tcpSocket(conn)
+		t.doHandShake(conn, origin, url, id)
+		go t.h_tcpSocket(conn)
 	}
 	return err
 }
 
-func (this *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
+func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	datalen := len(msg)
 	buf, err := binbuf.BuildBuffer(datalen + PCK_MIN_SIZE)
 	if err != nil {
@@ -172,17 +172,17 @@ func (this *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	return err2
 }
 
-func (this *TcpNetWorker) onConn(conn net.Conn, id string) {
+func (t *TcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
-	err := nets.AddConnInfo(id, nets.TCP, conn, this)
+	err := nets.AddConnInfo(id, nets.TCP, conn, t)
 	if err != nil {
-		this.onError(conn, err)
+		t.onError(conn, err)
 	} else {
-		this.eventListener.OnConn(id)
+		t.eventListener.OnConn(id)
 	}
 }
 
-func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
+func (t *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	nets.ResetConnState(id)
 	if msg[0] == 35 { // '#'
 		strmsg := string(msg)
@@ -191,52 +191,52 @@ func (this *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 			return
 		} else if strmsg == "#ping" {
 			fmt.Println("re sending pong to..." + id)
-			go this.Send(conn, []byte("#pong")) // return the pong pck
+			go t.Send(conn, []byte("#pong")) // return the pong pck
 			return
 		}
 	}
-	this.eventListener.OnMsg(id, msg)
+	t.eventListener.OnMsg(id, msg)
 }
 
-func (this *TcpNetWorker) onClose(conn net.Conn) {
+func (t *TcpNetWorker) onClose(conn net.Conn) {
 	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
-		this.eventListener.OnClose(id)
+		t.eventListener.OnClose(id)
 		nets.RemoveConnInfo(id) // remove the closed conn from local record
 		conn.Close()
 	}
 }
 
-func (this *TcpNetWorker) onError(conn net.Conn, err error) {
+func (t *TcpNetWorker) onError(conn net.Conn, err error) {
 	if conn != nil {
 		id, exists := nets.GetInfoIdByConn(conn)
 		if exists {
-			this.eventListener.OnError(id, err)
-			this.onClose(conn) // close the conn with errors
+			t.eventListener.OnError(id, err)
+			t.onClose(conn) // close the conn with errors
 		} else {
-			this.eventListener.OnError("", err)
-			this.onClose(conn) // close the conn with errors
+			t.eventListener.OnError("", err)
+			t.onClose(conn) // close the conn with errors
 		}
 	} else {
-		this.eventListener.OnError("", err)
+		t.eventListener.OnError("", err)
 	}
 }
 
-func (this *TcpNetWorker) BindEventListener(eventListener nets.INetEventListener) error {
-	if this.eventListener == nil {
-		this.eventListener = eventListener
+func (t *TcpNetWorker) BindEventListener(eventListener nets.INetEventListener) error {
+	if t.eventListener == nil {
+		t.eventListener = eventListener
 		return nil
 	}
-	return errors.New("this net worker has binded an event listener!!")
+	return errors.New("t net worker has binded an event listener!!")
 }
 
-func (this *TcpNetWorker) Close(id string, conn net.Conn) error {
-	this.eventListener.OnClose(id)
+func (t *TcpNetWorker) Close(id string, conn net.Conn) error {
+	t.eventListener.OnClose(id)
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }
 
-func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id string) error {
+func (t *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -247,11 +247,11 @@ func (this *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, 
 	if err2 != nil {
 		return err2
 	}
-	this.onConn(conn, id)
+	t.onConn(conn, id)
 	return nil
 }
 
-func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
+func (t *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	var datas map[string]string
 	if err := jsoniter.Unmarshal([]byte(info), &datas); err != nil {
 		return err
@@ -260,9 +260,9 @@ func (this *TcpNetWorker) dealHandShake(conn net.Conn, info string) error {
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	id, b := this.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
+	id, b := t.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
-		this.onConn(conn, id)
+		t.onConn(conn, id)
 		return nil
 	} else {
 		return errors.New("handshake illegal!!")

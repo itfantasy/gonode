@@ -30,75 +30,75 @@ type RabbitMQ struct {
 }
 
 func NewRabbitMQ() *RabbitMQ {
-	this := new(RabbitMQ)
-	this.user = "guest"
-	this.pass = "guest"
-	this.queDict = make(map[string]*amqp.Queue)
-	this.opts = common.NewCompOptions()
-	this.opts.Set(OPT_AUTOACK, true)
-	return this
+	r := new(RabbitMQ)
+	r.user = "guest"
+	r.pass = "guest"
+	r.queDict = make(map[string]*amqp.Queue)
+	r.opts = common.NewCompOptions()
+	r.opts.Set(OPT_AUTOACK, true)
+	return r
 }
 
-func (this *RabbitMQ) Conn(url string, host string) error {
-	connStr := "amqp://" + this.user + ":" + this.pass + "@" + url + "/" + host
+func (r *RabbitMQ) Conn(url string, host string) error {
+	connStr := "amqp://" + r.user + ":" + r.pass + "@" + url + "/" + host
 	conn, err := amqp.Dial(connStr)
 	if err != nil {
-		this.Close()
+		r.Close()
 		return err
 	}
 	ch, err := conn.Channel()
 	if err != nil {
-		this.Close()
+		r.Close()
 		return err
 	}
-	this.conn = conn
-	this.ch = ch
+	r.conn = conn
+	r.ch = ch
 	return nil
 }
 
-func (this *RabbitMQ) autoQueueDeclare(name string) (*amqp.Queue, error) {
-	_, exist := this.queDict[name]
+func (r *RabbitMQ) autoQueueDeclare(name string) (*amqp.Queue, error) {
+	_, exist := r.queDict[name]
 	if exist {
-		return this.queDict[name], nil
+		return r.queDict[name], nil
 	}
-	q, err := this.ch.QueueDeclare(
+	q, err := r.ch.QueueDeclare(
 		name,
-		this.opts.GetBool(OPT_DURABLE),
-		this.opts.GetBool(OPT_AUTODELETE),
-		this.opts.GetBool(OPT_EXCLUSIVE),
-		this.opts.GetBool(OPT_NOWAIT),
-		this.opts.GetArgs(OPT_ARGS),
+		r.opts.GetBool(OPT_DURABLE),
+		r.opts.GetBool(OPT_AUTODELETE),
+		r.opts.GetBool(OPT_EXCLUSIVE),
+		r.opts.GetBool(OPT_NOWAIT),
+		r.opts.GetArgs(OPT_ARGS),
 	)
 	if err != nil {
 		return nil, err
 	}
-	this.queDict[name] = &q
-	return this.queDict[name], nil
+	r.queDict[name] = &q
+	return r.queDict[name], nil
 }
 
-func (this *RabbitMQ) SetAuthor(user string, pass string) {
-	this.user = user
-	this.pass = pass
+func (r *RabbitMQ) SetAuthor(user string, pass string) {
+	r.user = user
+	r.pass = pass
 }
 
-func (this *RabbitMQ) SetOption(key string, val interface{}) {
-	this.opts.Set(key, val)
+func (r *RabbitMQ) SetOption(key string, val interface{}) {
+	r.opts.Set(key, val)
 }
 
-func (this *RabbitMQ) BindSubscriber(subscriber common.ISubscriber) {
-	this.subscriber = subscriber
+func (r *RabbitMQ) BindSubscriber(subscriber common.ISubscriber) {
+	r.subscriber = subscriber
 }
 
-func (this *RabbitMQ) Publish(que string, msg string) error {
-	_, _err := this.autoQueueDeclare(que)
+func (r *RabbitMQ) Publish(que string, msg string) error {
+	_, _err := r.autoQueueDeclare(que)
 	if _err != nil {
 		return _err
 	}
-	err := this.ch.Publish(
-		this.opts.GetString(OPT_EXCHANGE), // exchange
+	err := r.ch.Publish(
+		r.opts.GetString(OPT_EXCHANGE), // exchange
 		que, // routing key
-		this.opts.GetBool(OPT_MANDATORY), // mandatory
-		this.opts.GetBool(OPT_IMMEDIATE), // immediate
+		r.opts.GetBool(OPT_MANDATORY), // mandatory
+		r.opts.GetBool(OPT_IMMEDIATE), // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(msg),
@@ -106,42 +106,42 @@ func (this *RabbitMQ) Publish(que string, msg string) error {
 	return err
 }
 
-func (this *RabbitMQ) Subscribe(que string) {
-	_, err := this.autoQueueDeclare(que)
+func (r *RabbitMQ) Subscribe(que string) {
+	_, err := r.autoQueueDeclare(que)
 	if err != nil {
-		if this.subscriber != nil {
-			this.subscriber.OnSubError(que, err)
+		if r.subscriber != nil {
+			r.subscriber.OnSubError(que, err)
 		}
 	}
-	if this.subscriber != nil {
-		this.subscriber.OnSubscribe(que)
+	if r.subscriber != nil {
+		r.subscriber.OnSubscribe(que)
 	}
-	msgs, err := this.ch.Consume(
+	msgs, err := r.ch.Consume(
 		que,
-		this.opts.GetString(OPT_CONSUMER),
-		this.opts.GetBool(OPT_AUTOACK),
-		this.opts.GetBool(OPT_EXCLUSIVE),
-		this.opts.GetBool(OPT_NOLOCAL),
-		this.opts.GetBool(OPT_NOWAIT),
-		this.opts.GetArgs(OPT_ARGS),
+		r.opts.GetString(OPT_CONSUMER),
+		r.opts.GetBool(OPT_AUTOACK),
+		r.opts.GetBool(OPT_EXCLUSIVE),
+		r.opts.GetBool(OPT_NOLOCAL),
+		r.opts.GetBool(OPT_NOWAIT),
+		r.opts.GetArgs(OPT_ARGS),
 	)
 	if err != nil {
-		if this.subscriber != nil {
-			this.subscriber.OnSubError(que, err)
+		if r.subscriber != nil {
+			r.subscriber.OnSubError(que, err)
 		}
 	}
 	for d := range msgs {
-		if this.subscriber != nil {
-			this.subscriber.OnSubMessage(que, string(d.Body))
+		if r.subscriber != nil {
+			r.subscriber.OnSubMessage(que, string(d.Body))
 		}
 	}
 }
 
-func (this *RabbitMQ) Close() {
-	if this.conn != nil {
-		this.conn.Close()
+func (r *RabbitMQ) Close() {
+	if r.conn != nil {
+		r.conn.Close()
 	}
-	if this.ch != nil {
-		this.ch.Close()
+	if r.ch != nil {
+		r.ch.Close()
 	}
 }

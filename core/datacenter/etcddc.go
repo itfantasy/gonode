@@ -17,47 +17,47 @@ type EtcdDC struct {
 }
 
 func NewEtcdDC(et *etcd.Etcd) *EtcdDC {
-	this := new(EtcdDC)
-	this.coreEtcd = et
-	return this
+	e := new(EtcdDC)
+	e.coreEtcd = et
+	return e
 }
 
-func (this *EtcdDC) BindCallbacks(callbacks IDCCallbacks) {
-	this.callbacks = callbacks
+func (e *EtcdDC) BindCallbacks(callbacks IDCCallbacks) {
+	e.callbacks = callbacks
 }
-func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, msfrequency int) error {
-	this.info = info
-	this.channel = channel
+func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, msfrequency int) error {
+	e.info = info
+	e.channel = channel
 
 	// sub the channel
-	this.coreEtcd.BindSubscriber(this)
-	go this.coreEtcd.Subscribe(channel)
+	e.coreEtcd.BindSubscriber(e)
+	go e.coreEtcd.Subscribe(channel)
 
 	// register self
-	this.info.Signature()
-	infoStr, err := json.Encode(this.info)
+	e.info.Signature()
+	infoStr, err := json.Encode(e.info)
 	if err != nil {
 		return err
 	}
 
-	err2 := this.coreEtcd.Set(channel+"/"+this.info.Id, infoStr)
+	err2 := e.coreEtcd.Set(channel+"/"+e.info.Id, infoStr)
 	if err2 != nil {
 		return err2
 	}
 
 	// and auto detect per msfrequency
-	if this.info.BackEnds != "" {
+	if e.info.BackEnds != "" {
 		go func() {
 			for {
 				timer.Sleep(msfrequency)
-				ids, err := this.coreEtcd.Gets(channel)
+				ids, err := e.coreEtcd.Gets(channel)
 				if err != nil {
-					this.callbacks.OnDCError(err)
+					e.callbacks.OnDCError(err)
 					continue
 				}
 				for id, _ := range ids {
-					if id != this.info.Id {
-						this.callbacks.OnNewNode(id)
+					if id != e.info.Id {
+						e.callbacks.OnNewNode(id)
 					}
 				}
 			}
@@ -66,11 +66,11 @@ func (this *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string,
 
 	return nil
 }
-func (this *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
-	if this.info.Id == id {
-		return this.info, nil
+func (e *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
+	if e.info.Id == id {
+		return e.info, nil
 	}
-	infoStr, err := this.coreEtcd.Get(this.channel + "/" + id)
+	infoStr, err := e.coreEtcd.Get(e.channel + "/" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -81,18 +81,18 @@ func (this *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 	}
 	return &info, nil
 }
-func (this *EtcdDC) GetNodeSig(id string) (string, error) {
-	info, err := this.GetNodeInfo(id)
+func (e *EtcdDC) GetNodeSig(id string) (string, error) {
+	info, err := e.GetNodeInfo(id)
 	if err != nil {
 		return "", err
 	}
 	return info.Sig, err
 }
-func (this *EtcdDC) CheckNode(id string, sig string) bool {
+func (e *EtcdDC) CheckNode(id string, sig string) bool {
 	if id == "" {
 		return false
 	}
-	nodeSig, err := this.GetNodeSig(id)
+	nodeSig, err := e.GetNodeSig(id)
 	if err != nil {
 		return false
 	}
@@ -102,18 +102,18 @@ func (this *EtcdDC) CheckNode(id string, sig string) bool {
 	return true
 }
 
-func (this *EtcdDC) OnSubscribe(path string) {
-	if this.channel == path {
+func (e *EtcdDC) OnSubscribe(path string) {
+	if e.channel == path {
 
 	}
 }
-func (this *EtcdDC) OnSubMessage(path string, msg string) {
-	if strings.HasPrefix(path, this.channel) {
-		this.callbacks.OnNewNode(strings.TrimPrefix(path, this.channel+"/"))
+func (e *EtcdDC) OnSubMessage(path string, msg string) {
+	if strings.HasPrefix(path, e.channel) {
+		e.callbacks.OnNewNode(strings.TrimPrefix(path, e.channel+"/"))
 	}
 }
-func (this *EtcdDC) OnSubError(path string, err error) {
-	if strings.HasPrefix(path, this.channel) {
-		this.callbacks.OnDCError(err)
+func (e *EtcdDC) OnSubError(path string, err error) {
+	if strings.HasPrefix(path, e.channel) {
+		e.callbacks.OnDCError(err)
 	}
 }

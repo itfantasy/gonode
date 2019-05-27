@@ -16,9 +16,9 @@ type KcpNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
-func (this *KcpNetWorker) Listen(url string) error {
+func (k *KcpNetWorker) Listen(url string) error {
 
-	go nets.AutoPing(this)
+	go nets.AutoPing(k)
 
 	url = strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
@@ -30,15 +30,15 @@ func (this *KcpNetWorker) Listen(url string) error {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			this.onError(conn, err)
+			k.onError(conn, err)
 			continue
 		}
-		go this.h_kcpSocket(conn)
+		go k.h_kcpSocket(conn)
 	}
 	return nil
 }
 
-func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
+func (k *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 	buf := make([]byte, 4096, 4096) // the rev buf
 	defer func() {
 		buf = nil
@@ -46,7 +46,7 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf[0:])
 		if err != nil {
-			this.onError(conn, err)
+			k.onError(conn, err)
 			break
 		}
 		if n > 0 {
@@ -55,32 +55,32 @@ func (this *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 			datas := bytes.NewBuffer(temp)
 			datas.Write(buf[0:n])
 			if exists {
-				this.onMsg(conn, id, datas.Bytes())
+				k.onMsg(conn, id, datas.Bytes())
 			} else {
-				if err := this.dealHandShake(conn, string(datas.Bytes())); err != nil {
-					this.onError(conn, err)
+				if err := k.dealHandShake(conn, string(datas.Bytes())); err != nil {
+					k.onError(conn, err)
 				}
 			}
 			temp = nil // dispose the temp buffer
 		} else {
-			this.onError(conn, errors.New("receive no datas!!"))
+			k.onError(conn, errors.New("receive no datas!!"))
 		}
 	}
 }
 
-func (this *KcpNetWorker) Connect(id string, url string, origin string) error {
+func (k *KcpNetWorker) Connect(id string, url string, origin string) error {
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
 
 	conn, err := kcp.Dial(infos[0])
 	if err == nil {
-		this.doHandShake(conn, origin, id)
-		go this.h_kcpSocket(conn)
+		k.doHandShake(conn, origin, id)
+		go k.h_kcpSocket(conn)
 	}
 	return err
 }
 
-func (this *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
+func (k *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	defer func() {
 		msg = nil // dispose the send buffer
 	}()
@@ -88,17 +88,17 @@ func (this *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	return err
 }
 
-func (this *KcpNetWorker) onConn(conn net.Conn, id string) {
+func (k *KcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
-	err := nets.AddConnInfo(id, nets.KCP, conn, this)
+	err := nets.AddConnInfo(id, nets.KCP, conn, k)
 	if err != nil {
-		this.onError(conn, err)
+		k.onError(conn, err)
 	} else {
-		this.eventListener.OnConn(id)
+		k.eventListener.OnConn(id)
 	}
 }
 
-func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
+func (k *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	nets.ResetConnState(id)
 	if msg[0] == 35 { // '#'
 		strmsg := string(msg)
@@ -107,52 +107,52 @@ func (this *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 			return
 		} else if strmsg == "#ping" {
 			fmt.Println("re sending pong to..." + id)
-			go this.Send(conn, []byte("#pong")) // return the pong pck
+			go k.Send(conn, []byte("#pong")) // return the pong pck
 			return
 		}
 	}
-	this.eventListener.OnMsg(id, msg)
+	k.eventListener.OnMsg(id, msg)
 }
 
-func (this *KcpNetWorker) onClose(conn net.Conn) {
+func (k *KcpNetWorker) onClose(conn net.Conn) {
 	id, exists := nets.GetInfoIdByConn(conn)
 	if exists {
-		this.eventListener.OnClose(id)
+		k.eventListener.OnClose(id)
 		nets.RemoveConnInfo(id) // remove the closed conn from local record
 		conn.Close()
 	}
 }
 
-func (this *KcpNetWorker) onError(conn net.Conn, err error) {
+func (k *KcpNetWorker) onError(conn net.Conn, err error) {
 	if conn != nil {
 		id, exists := nets.GetInfoIdByConn(conn)
 		if exists {
-			this.eventListener.OnError(id, err)
-			this.onClose(conn) // close the conn with errors
+			k.eventListener.OnError(id, err)
+			k.onClose(conn) // close the conn with errors
 		} else {
-			this.eventListener.OnError("", err)
-			this.onClose(conn) // close the conn with errors
+			k.eventListener.OnError("", err)
+			k.onClose(conn) // close the conn with errors
 		}
 	} else {
-		this.eventListener.OnError("", err)
+		k.eventListener.OnError("", err)
 	}
 }
 
-func (this *KcpNetWorker) BindEventListener(eventListener nets.INetEventListener) error {
-	if this.eventListener == nil {
-		this.eventListener = eventListener
+func (k *KcpNetWorker) BindEventListener(eventListener nets.INetEventListener) error {
+	if k.eventListener == nil {
+		k.eventListener = eventListener
 		return nil
 	}
-	return errors.New("this net worker has binded an event listener!!")
+	return errors.New("k net worker has binded an event listener!!")
 }
 
-func (this *KcpNetWorker) Close(id string, conn net.Conn) error {
-	this.eventListener.OnClose(id)
+func (k *KcpNetWorker) Close(id string, conn net.Conn) error {
+	k.eventListener.OnClose(id)
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }
 
-func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) error {
+func (k *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) error {
 	info := make(map[string]string)
 	info["Origin"] = origin
 	datas, err := jsoniter.Marshal(info)
@@ -163,11 +163,11 @@ func (this *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) e
 	if err2 != nil {
 		return err2
 	}
-	this.onConn(conn, id)
+	k.onConn(conn, id)
 	return nil
 }
 
-func (this *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
+func (k *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	var datas map[string]string
 	if err := jsoniter.Unmarshal([]byte(context), &datas); err != nil {
 		return err
@@ -176,9 +176,9 @@ func (this *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	if !exists {
 		return errors.New("handshake datas missing!")
 	}
-	id, b := this.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
+	id, b := k.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
-		this.onConn(conn, id)
+		k.onConn(conn, id)
 		fmt.Println("handshake succeed !!")
 		return nil
 	} else {

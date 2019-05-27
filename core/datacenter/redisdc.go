@@ -21,51 +21,51 @@ type RedisDC struct {
 }
 
 func NewRedisDC(red *redis.Redis) *RedisDC {
-	this := new(RedisDC)
-	this.coreRedis = red
-	return this
+	r := new(RedisDC)
+	r.coreRedis = red
+	return r
 }
 
-func (this *RedisDC) BindCallbacks(callbacks IDCCallbacks) {
-	this.callbacks = callbacks
+func (r *RedisDC) BindCallbacks(callbacks IDCCallbacks) {
+	r.callbacks = callbacks
 }
-func (this *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, msfrequency int) error {
-	this.info = info
-	this.channel = channel
+func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, msfrequency int) error {
+	r.info = info
+	r.channel = channel
 
 	// sub the channel
-	this.coreRedis.BindSubscriber(this)
-	go this.coreRedis.Subscribe(channel)
+	r.coreRedis.BindSubscriber(r)
+	go r.coreRedis.Subscribe(channel)
 
 	// register self
-	this.info.Signature()
-	infoStr, err := json.Encode(this.info)
+	r.info.Signature()
+	infoStr, err := json.Encode(r.info)
 	if err != nil {
 		return err
 	}
-	_, err2 := this.coreRedis.Set(channel+":infos:"+this.info.Id, infoStr)
+	_, err2 := r.coreRedis.Set(channel+":infos:"+r.info.Id, infoStr)
 	if err2 != nil {
 		return err2
 	}
-	_, err3 := this.coreRedis.SAdd(channel+":all", this.info.Id)
+	_, err3 := r.coreRedis.SAdd(channel+":all", r.info.Id)
 	if err3 != nil {
 		return err3
 	}
-	this.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+this.info.Id)
+	r.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+r.info.Id)
 
 	// and auto detect per msfrequency
-	if this.info.BackEnds != "" {
+	if r.info.BackEnds != "" {
 		go func() {
 			for {
 				timer.Sleep(msfrequency)
-				ids, err := this.coreRedis.SMembers(channel + ":all")
+				ids, err := r.coreRedis.SMembers(channel + ":all")
 				if err != nil {
-					this.callbacks.OnDCError(err)
+					r.callbacks.OnDCError(err)
 					continue
 				}
 				for _, id := range ids {
-					if id != this.info.Id {
-						this.callbacks.OnNewNode(id)
+					if id != r.info.Id {
+						r.callbacks.OnNewNode(id)
 					}
 				}
 			}
@@ -74,11 +74,11 @@ func (this *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string
 
 	return nil
 }
-func (this *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
-	if this.info.Id == id {
-		return this.info, nil
+func (r *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
+	if r.info.Id == id {
+		return r.info, nil
 	}
-	infoStr, err := this.coreRedis.Get(this.channel + ":infos:" + id)
+	infoStr, err := r.coreRedis.Get(r.channel + ":infos:" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -89,18 +89,18 @@ func (this *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 	}
 	return &info, nil
 }
-func (this *RedisDC) GetNodeSig(id string) (string, error) {
-	info, err := this.GetNodeInfo(id)
+func (r *RedisDC) GetNodeSig(id string) (string, error) {
+	info, err := r.GetNodeInfo(id)
 	if err != nil {
 		return "", err
 	}
 	return info.Sig, err
 }
-func (this *RedisDC) CheckNode(id string, sig string) bool {
+func (r *RedisDC) CheckNode(id string, sig string) bool {
 	if id == "" {
 		return false
 	}
-	nodeSig, err := this.GetNodeSig(id)
+	nodeSig, err := r.GetNodeSig(id)
 	if err != nil {
 		return false
 	}
@@ -110,23 +110,23 @@ func (this *RedisDC) CheckNode(id string, sig string) bool {
 	return true
 }
 
-func (this *RedisDC) OnSubscribe(channel string) {
-	if this.channel == channel {
+func (r *RedisDC) OnSubscribe(channel string) {
+	if r.channel == channel {
 
 	}
 }
-func (this *RedisDC) OnSubMessage(channel string, msg string) {
-	if this.channel == channel {
+func (r *RedisDC) OnSubMessage(channel string, msg string) {
+	if r.channel == channel {
 		infos := strings.Split(msg, "#")
 		if len(infos) == 2 {
 			if infos[0] == GONODE_NEW_NODE {
-				this.callbacks.OnNewNode(infos[1])
+				r.callbacks.OnNewNode(infos[1])
 			}
 		}
 	}
 }
-func (this *RedisDC) OnSubError(channel string, err error) {
-	if this.channel == channel {
-		this.callbacks.OnDCError(err)
+func (r *RedisDC) OnSubError(channel string, err error) {
+	if r.channel == channel {
+		r.callbacks.OnDCError(err)
 	}
 }

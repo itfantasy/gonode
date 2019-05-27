@@ -14,24 +14,24 @@ import (
 type RabbitMQLogWriter chan *log.LogRecord
 
 // This is the SocketLogWriter's output method
-func (w RabbitMQLogWriter) LogWrite(rec *log.LogRecord) {
-	w <- rec
+func (r RabbitMQLogWriter) LogWrite(rec *log.LogRecord) {
+	r <- rec
 }
 
-func (w RabbitMQLogWriter) Close() {
-	close(w)
+func (r RabbitMQLogWriter) Close() {
+	close(r)
 }
 
 func NewRabbitMQLogWriter(rmq *rabbitmq.RabbitMQ, logchan string) RabbitMQLogWriter {
 
-	w := RabbitMQLogWriter(make(chan *log.LogRecord, log.LogBufferLength))
+	r := RabbitMQLogWriter(make(chan *log.LogRecord, log.LogBufferLength))
 
 	go func() {
 		defer func() {
 			rmq.Close()
 		}()
 
-		for rec := range w {
+		for rec := range r {
 			// Marshall into JSON
 			js, err := json.Marshal(rec)
 			if err != nil {
@@ -47,5 +47,5 @@ func NewRabbitMQLogWriter(rmq *rabbitmq.RabbitMQ, logchan string) RabbitMQLogWri
 		}
 	}()
 
-	return w
+	return r
 }

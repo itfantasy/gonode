@@ -42,45 +42,45 @@ func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
 }
 
-func (this *GoNode) onConn(id string) {
-	defer this.autoRecover()
-	this.logger.Info("conn to " + id + " succeed!")
-	this.behavior.OnConn(id)
+func (g *GoNode) onConn(id string) {
+	defer g.autoRecover()
+	g.logger.Info("conn to " + id + " succeed!")
+	g.behavior.OnConn(id)
 }
 
-func (this *GoNode) onMsg(id string, msg []byte) {
-	defer this.autoRecover()
-	this.behavior.OnMsg(id, msg)
+func (g *GoNode) onMsg(id string, msg []byte) {
+	defer g.autoRecover()
+	g.behavior.OnMsg(id, msg)
 }
 
-func (this *GoNode) onClose(id string) {
-	defer this.autoRecover()
-	this.behavior.OnClose(id)
+func (g *GoNode) onClose(id string) {
+	defer g.autoRecover()
+	g.behavior.OnClose(id)
 }
 
-func (this *GoNode) onError(id string, err error) {
-	defer this.autoRecover()
-	this.logger.Error("the node[" + id + "] occurs errors:" + err.Error())
+func (g *GoNode) onError(id string, err error) {
+	defer g.autoRecover()
+	g.logger.Error("the node[" + id + "] occurs errors:" + err.Error())
 }
 
-func (this *GoNode) onCheckNode(origin string) (string, bool) {
+func (g *GoNode) onCheckNode(origin string) (string, bool) {
 	b := false
 	id, url, sig, err := nets.ParserOriginInfo(origin)
 	if err == nil {
-		b = this.dc.CheckNode(id, sig)
+		b = g.dc.CheckNode(id, sig)
 	}
 	if !b {
-		if !this.info.Pub {
-			this.logger.Info("not a inside node! give up the conn:" + origin)
+		if !g.info.Pub {
+			g.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
-			connId := this.randomCntId()
+			connId := g.randomCntId()
 			return connId, true
 		}
 	} else {
 		exist := nets.IsIdExists(id)
 		if exist {
-			this.logger.Info("there is a same id in local record:" + url + "#" + id)
+			g.logger.Info("there is a same id in local record:" + url + "#" + id)
 			return "", false
 		}
 		return id, true
@@ -88,33 +88,33 @@ func (this *GoNode) onCheckNode(origin string) (string, bool) {
 }
 
 // when a new node is found
-func (this *GoNode) onNewNode(id string) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+func (g *GoNode) onNewNode(id string) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
 
 	exist := nets.IsIdExists(id)
 	if !exist {
 		// check the local node is interested in the new node
-		if this.checkTargetId(id) {
-			this.logger.Info("a new node has been found!", id)
+		if g.checkTargetId(id) {
+			g.logger.Info("a new node has been found!", id)
 			// find the node url by the id
-			info, err := this.dc.GetNodeInfo(id)
+			info, err := g.dc.GetNodeInfo(id)
 			if err == nil {
-				err2 := this.Connnect(info.Id, info.Url)
+				err2 := g.Connnect(info.Id, info.Url)
 				if err2 != nil {
-					this.logger.Error(err2.Error() + "[" + id + "]")
+					g.logger.Error(err2.Error() + "[" + id + "]")
 				}
 			} else {
-				this.logger.Error(err.Error() + "[" + id + "]")
+				g.logger.Error(err.Error() + "[" + id + "]")
 			}
 		}
 	}
 }
 
-func (this *GoNode) onDCError(err error) {
-	this.logger.Error(err.Error())
+func (g *GoNode) onDCError(err error) {
+	g.logger.Error(err.Error())
 }
 
-func (this *GoNode) onDispose() {
+func (g *GoNode) onDispose() {
 
 }

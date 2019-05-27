@@ -13,30 +13,30 @@ type Actor struct {
 }
 
 func newActor(pid int64, fun func([]interface{}), capacity int) *Actor {
-	this := new(Actor)
-	this.pid = pid
-	this.thefunc = fun
-	this.argschan = make(chan []interface{}, capacity)
-	this.isKilling = false
+	a := new(Actor)
+	a.pid = pid
+	a.thefunc = fun
+	a.argschan = make(chan []interface{}, capacity)
+	a.isKilling = false
 
 	go func() {
 		defer func() {
-			close(this.argschan)
+			close(a.argschan)
 			remove(pid)
 		}()
 
-		for args := range this.argschan {
-			if this.isKilling && args == nil {
+		for args := range a.argschan {
+			if a.isKilling && args == nil {
 				break
 			}
-			this.do(args)
+			a.do(args)
 		}
 	}()
 
-	return this
+	return a
 }
 
-func (this *Actor) do(args []interface{}) {
+func (a *Actor) do(args []interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			errMsg := "auto recovering..." + fmt.Sprint(err) + "  args:" + fmt.Sprint(args) +
@@ -48,20 +48,20 @@ func (this *Actor) do(args []interface{}) {
 			}
 		}
 	}()
-	this.thefunc(args)
+	a.thefunc(args)
 }
 
-func (this *Actor) post(args []interface{}) bool {
-	if this.isKilling {
+func (a *Actor) post(args []interface{}) bool {
+	if a.isKilling {
 		return false
 	}
-	this.argschan <- args
+	a.argschan <- args
 	return true
 }
 
-func (this *Actor) killing() {
-	if !this.isKilling {
-		this.isKilling = true
-		this.argschan <- nil
+func (a *Actor) killing() {
+	if !a.isKilling {
+		a.isKilling = true
+		a.argschan <- nil
 	}
 }

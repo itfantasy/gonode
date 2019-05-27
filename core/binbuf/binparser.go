@@ -21,57 +21,57 @@ func BuildParser(buffer []byte, offset int) *BinParser {
 	return parser
 }
 
-func (this *BinParser) Byte() (byte, error) {
+func (b *BinParser) Byte() (byte, error) {
 	var ret byte
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) Bytes() []byte {
-	return this.buffer
+func (b *BinParser) Bytes() []byte {
+	return b.buffer
 }
 
-func (this *BinParser) Bool() (bool, error) {
+func (b *BinParser) Bool() (bool, error) {
 	var ret bool
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return false, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) Short() (int16, error) {
+func (b *BinParser) Short() (int16, error) {
 	var ret int16
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) Int() (int32, error) {
+func (b *BinParser) Int() (int32, error) {
 	var ret int32
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) Long() (int64, error) {
+func (b *BinParser) Long() (int64, error) {
 	var ret int64
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) String() (string, error) {
-	length, err := this.Int() // get the string len
+func (b *BinParser) String() (string, error) {
+	length, err := b.Int() // get the string len
 	if err != nil {
 		return "", err
 	}
@@ -79,30 +79,30 @@ func (this *BinParser) String() (string, error) {
 		return "", errors.New("illegal length for a string!!")
 	}
 	var tempBuffer []byte = make([]byte, length)
-	if binary.Read(this.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
+	if binary.Read(b.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
 		return "", err
 	}
 	return string(tempBuffer), nil
 }
 
-func (this *BinParser) Float() (float32, error) {
+func (b *BinParser) Float() (float32, error) {
 	var ret float32
-	err := binary.Read(this.bytesBuffer, binary.LittleEndian, &ret)
+	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
 		return 0, err
 	}
 	return ret, nil
 }
 
-func (this *BinParser) Ints() ([]int32, error) {
-	length, err := this.Int() // get the []int32 len
+func (b *BinParser) Ints() ([]int32, error) {
+	length, err := b.Int() // get the []int32 len
 	if err != nil {
 		return nil, err
 	}
 	array := make([]int32, 0, length)
 	var i int32
 	for i = 0; i < length; i++ {
-		item, ierr := this.Int()
+		item, ierr := b.Int()
 		if ierr != nil {
 			return nil, ierr
 		}
@@ -111,15 +111,15 @@ func (this *BinParser) Ints() ([]int32, error) {
 	return array, nil
 }
 
-func (this *BinParser) Array() ([]interface{}, error) {
-	length, err := this.Int() // get the []int32 len
+func (b *BinParser) Array() ([]interface{}, error) {
+	length, err := b.Int() // get the []int32 len
 	if err != nil {
 		return nil, err
 	}
 	array := make([]interface{}, 0, length)
 	var i int32
 	for i = 0; i < length; i++ {
-		item, ierr := this.Object()
+		item, ierr := b.Object()
 		if ierr != nil {
 			return nil, ierr
 		}
@@ -128,19 +128,19 @@ func (this *BinParser) Array() ([]interface{}, error) {
 	return array, nil
 }
 
-func (this *BinParser) Hash() (map[interface{}]interface{}, error) {
-	length, err := this.Int() // get the hash len
+func (b *BinParser) Hash() (map[interface{}]interface{}, error) {
+	length, err := b.Int() // get the hash len
 	if err != nil {
 		return nil, err
 	}
 	hash := make(map[interface{}]interface{})
 	var i int32
 	for i = 0; i < length; i++ {
-		k, kerr := this.Object()
+		k, kerr := b.Object()
 		if kerr != nil {
 			return nil, kerr
 		}
-		v, verr := this.Object()
+		v, verr := b.Object()
 		if verr != nil {
 			return nil, verr
 		}
@@ -149,34 +149,34 @@ func (this *BinParser) Hash() (map[interface{}]interface{}, error) {
 	return hash, nil
 }
 
-func (this *BinParser) Object() (interface{}, error) {
-	c, err := this.Byte()
+func (b *BinParser) Object() (interface{}, error) {
+	c, err := b.Byte()
 	if err != nil {
 		return nil, err
 	}
 	switch c {
 	case types.Byte:
-		return this.Byte()
+		return b.Byte()
 	case types.Bool:
-		return this.Bool()
+		return b.Bool()
 	case types.Short:
-		return this.Short()
+		return b.Short()
 	case types.Int:
-		return this.Int()
+		return b.Int()
 	case types.Long:
-		return this.Long()
+		return b.Long()
 	case types.String:
-		return this.String()
+		return b.String()
 	case types.Float:
-		return this.Float()
+		return b.Float()
 	case types.Ints:
-		return this.Ints()
+		return b.Ints()
 	case types.Array:
-		return this.Array()
+		return b.Array()
 	case types.Hash:
-		return this.Hash()
+		return b.Hash()
 	case types.Null:
-		if none, err := this.Byte(); err != nil {
+		if none, err := b.Byte(); err != nil {
 			return nil, err
 		} else if none != byte(0) {
 			return nil, errors.New("unknow type !!!")

@@ -15,48 +15,48 @@ type MySql struct {
 }
 
 func NewMySql() *MySql {
-	this := new(MySql)
-	this.user = "root"
-	this.pass = ""
-	this.opts = common.NewCompOptions()
-	return this
+	m := new(MySql)
+	m.user = "root"
+	m.pass = ""
+	m.opts = common.NewCompOptions()
+	return m
 }
 
-func (this *MySql) Conn(url string, dbname string) error {
-	if this.db != nil {
-		this.Close()
+func (m *MySql) Conn(url string, dbname string) error {
+	if m.db != nil {
+		m.Close()
 	}
-	connstr := this.user + ":" + this.pass + "@tcp(" + url + ")/" + dbname
+	connstr := m.user + ":" + m.pass + "@tcp(" + url + ")/" + dbname
 	db, err := sql.Open("mysql", connstr)
 	if err != nil {
 		return err
 	}
-	this.db = db
+	m.db = db
 	return nil
 }
 
-func (this *MySql) SetAuthor(user string, pass string) {
-	this.user = user
-	this.pass = pass
+func (m *MySql) SetAuthor(user string, pass string) {
+	m.user = user
+	m.pass = pass
 }
 
-func (this *MySql) SetOption(key string, val interface{}) {
-	this.opts.Set(key, val)
+func (m *MySql) SetOption(key string, val interface{}) {
+	m.opts.Set(key, val)
 }
 
-func (this *MySql) Close() {
-	if this.db != nil {
-		this.db.Close()
-		this.db = nil
+func (m *MySql) Close() {
+	if m.db != nil {
+		m.db.Close()
+		m.db = nil
 	}
 }
 
-func (this *MySql) RawDB() *sql.DB {
-	return this.db
+func (m *MySql) RawDB() *sql.DB {
+	return m.db
 }
 
-func (this *MySql) Table(tab string) *SqlBuilder {
+func (m *MySql) Table(tab string) *SqlBuilder {
 	bd := SqlBuilder{}
-	bd.doTable(this.db, tab)
+	bd.doTable(m.db, tab)
 	return &bd
 }

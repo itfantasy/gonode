@@ -26,16 +26,16 @@ type Redis struct {
 }
 
 func NewRedis() *Redis {
-	this := new(Redis)
-	this.pscDict = make(map[string]*redis.PubSubConn)
-	this.opts = common.NewCompOptions()
-	this.opts.Set(OPT_MAXPOOL, 100)
-	return this
+	r := new(Redis)
+	r.pscDict = make(map[string]*redis.PubSubConn)
+	r.opts = common.NewCompOptions()
+	r.opts.Set(OPT_MAXPOOL, 100)
+	return r
 }
 
 // ------------- com ----------------
 
-func (this *Redis) Conn(url string, db string) error {
+func (r *Redis) Conn(url string, db string) error {
 	// try to make a conn to redis
 	c, err := redis.Dial("tcp", url)
 	if err != nil {
@@ -45,13 +45,13 @@ func (this *Redis) Conn(url string, db string) error {
 	defer c.Close()
 	// enable the pool
 
-	maxpool := this.opts.GetInt(OPT_MAXPOOL)
+	maxpool := r.opts.GetInt(OPT_MAXPOOL)
 	// redis host
 	REDIS_HOST := url
 	// db
 	REDIS_DB := db
 	// build the pool
-	this.RedisClient = &redis.Pool{
+	r.RedisClient = &redis.Pool{
 		// set the maxidle and maxactive
 		MaxIdle:     maxpool,
 		MaxActive:   maxpool * 2,
@@ -62,8 +62,8 @@ func (this *Redis) Conn(url string, db string) error {
 				fmt.Println("[Redis]::create a new redis conn faild!!")
 				return nil, err
 			}
-			if this.auth != "" {
-				_, err2 := c.Do("AUTH", this.auth)
+			if r.auth != "" {
+				_, err2 := c.Do("AUTH", r.auth)
 				if err2 != nil {
 					fmt.Println("[Redis]::author faild!!")
 					c.Close()
@@ -79,46 +79,46 @@ func (this *Redis) Conn(url string, db string) error {
 	return nil
 }
 
-func (this *Redis) SetAuthor(user string, pass string) {
-	this.auth = user
+func (r *Redis) SetAuthor(user string, pass string) {
+	r.auth = user
 	if pass != "" {
-		this.auth += ":" + pass
+		r.auth += ":" + pass
 	}
 }
 
-func (this *Redis) SetOption(key string, val interface{}) {
-	this.opts.Set(key, val)
+func (r *Redis) SetOption(key string, val interface{}) {
+	r.opts.Set(key, val)
 }
 
-func (this *Redis) Close() {
-	this.RedisClient.Close()
+func (r *Redis) Close() {
+	r.RedisClient.Close()
 }
 
 // -------------string----------------
 
-func (this *Redis) Get(key string) (string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) Get(key string) (string, error) {
+	rc := r.RedisClient.Get()
 	str, err := redis.String(rc.Do("GET", key))
 	rc.Close()
 	return str, err
 }
 
-func (this *Redis) Set(key string, val string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) Set(key string, val string) (bool, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.String(rc.Do("SET", key, val))
 	rc.Close()
 	return suc == "OK", err
 }
 
-func (this *Redis) Exists(key string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) Exists(key string) (bool, error) {
+	rc := r.RedisClient.Get()
 	ret, err := redis.Bool(rc.Do("EXISTS", key))
 	rc.Close()
 	return ret, err
 }
 
-func (this *Redis) Delete(key string) (int64, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) Delete(key string) (int64, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.Int64(rc.Do("DEL", key))
 	rc.Close()
 	return suc, err
@@ -126,41 +126,41 @@ func (this *Redis) Delete(key string) (int64, error) {
 
 // -------------pub/sub----------------
 
-func (this *Redis) BindSubscriber(subscriber common.ISubscriber) {
-	this.subscriber = subscriber
+func (r *Redis) BindSubscriber(subscriber common.ISubscriber) {
+	r.subscriber = subscriber
 }
 
-func (this *Redis) Publish(channel string, msg string) {
-	rc := this.RedisClient.Get()
+func (r *Redis) Publish(channel string, msg string) {
+	rc := r.RedisClient.Get()
 	rc.Do("PUBLISH", channel, msg)
 	rc.Close()
 }
 
-func (this *Redis) Subscribe(channel string) {
-	_, exist := this.pscDict[channel]
+func (r *Redis) Subscribe(channel string) {
+	_, exist := r.pscDict[channel]
 	if !exist {
 		// ps: use another conn for the pub/sub, otherwise there will be an error..
-		psc := redis.PubSubConn{this.RedisClient.Get()}
+		psc := redis.PubSubConn{r.RedisClient.Get()}
 		err := psc.Subscribe(channel)
 		if err != nil {
-			if this.subscriber != nil {
-				this.subscriber.OnSubError(channel, err)
+			if r.subscriber != nil {
+				r.subscriber.OnSubError(channel, err)
 			}
 		}
 		for {
 			switch v := psc.Receive().(type) {
 			case redis.Message:
-				if this.subscriber != nil {
-					this.subscriber.OnSubMessage(v.Channel, string(v.Data))
+				if r.subscriber != nil {
+					r.subscriber.OnSubMessage(v.Channel, string(v.Data))
 				}
 			case redis.Subscription:
 				//fmt.Println("%s: %s %d\n", v.Channel, v.Kind, v.Count)
-				if this.subscriber != nil {
-					this.subscriber.OnSubscribe(v.Channel)
+				if r.subscriber != nil {
+					r.subscriber.OnSubscribe(v.Channel)
 				}
 			case error:
-				if this.subscriber != nil {
-					this.subscriber.OnSubError(channel, v)
+				if r.subscriber != nil {
+					r.subscriber.OnSubError(channel, v)
 				}
 				return
 			}
@@ -170,15 +170,15 @@ func (this *Redis) Subscribe(channel string) {
 
 // -------------set----------------
 
-func (this *Redis) SAdd(key string, member string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) SAdd(key string, member string) (bool, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.Bool(rc.Do("SADD", key, member))
 	rc.Close()
 	return suc, err
 }
 
-func (this *Redis) SMembers(key string) ([]string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) SMembers(key string) ([]string, error) {
+	rc := r.RedisClient.Get()
 	strs, err := redis.Strings(rc.Do("SMEMBERS", key))
 	rc.Close()
 	return strs, err
@@ -187,8 +187,8 @@ func (this *Redis) SMembers(key string) ([]string, error) {
 // -------------zset----------------
 // for the ranking, and only for setting; and the large datas for getting, maybe you can use php :P
 
-func (this *Redis) ZAdd(key string, score float32, val string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) ZAdd(key string, score float32, val string) (bool, error) {
+	rc := r.RedisClient.Get()
 	_, err := redis.Bool(rc.Do("ZADD", key, score, val))
 	rc.Close()
 	if err != nil {
@@ -197,22 +197,22 @@ func (this *Redis) ZAdd(key string, score float32, val string) (bool, error) {
 	return true, nil
 }
 
-func (this *Redis) ZCount(key string, start float32, end float32) (int, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) ZCount(key string, start float32, end float32) (int, error) {
+	rc := r.RedisClient.Get()
 	ret, err := redis.Int(rc.Do("ZCOUNT", key, start, end))
 	rc.Close()
 	return ret, err
 }
 
-func (this *Redis) ZSize(key string) (int, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) ZSize(key string) (int, error) {
+	rc := r.RedisClient.Get()
 	ret, err := redis.Int(rc.Do("ZCARD", key))
 	rc.Close()
 	return ret, err
 }
 
-func (this *Redis) ZRange(key string, start float32, end float32) ([]string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) ZRange(key string, start float32, end float32) ([]string, error) {
+	rc := r.RedisClient.Get()
 	ret, err := redis.Strings(rc.Do("ZRANGE", key, start, end))
 	rc.Close()
 	return ret, err
@@ -221,8 +221,8 @@ func (this *Redis) ZRange(key string, start float32, end float32) ([]string, err
 // -------------hash----------------
 // for the obj record
 
-func (this *Redis) HSet(key string, hkey string, val string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HSet(key string, hkey string, val string) (bool, error) {
+	rc := r.RedisClient.Get()
 	_, err := redis.Bool(rc.Do("HSET", key, hkey, val))
 	rc.Close()
 	if err != nil {
@@ -231,64 +231,64 @@ func (this *Redis) HSet(key string, hkey string, val string) (bool, error) {
 	return true, nil
 }
 
-func (this *Redis) HSetNx(key string, hkey string, val string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HSetNx(key string, hkey string, val string) (bool, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.Bool(rc.Do("HSETNX", key, hkey, val))
 	rc.Close()
 	return suc, err
 }
 
-func (this *Redis) HGet(key string, hkey string) (string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HGet(key string, hkey string) (string, error) {
+	rc := r.RedisClient.Get()
 	str, err := redis.String(rc.Do("HGET", key, hkey))
 	rc.Close()
 	return str, err
 }
 
-func (this *Redis) HDel(key string, hkey string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HDel(key string, hkey string) (bool, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.Bool(rc.Do("HDEL", key, hkey))
 	rc.Close()
 	return suc, err
 }
 
-func (this *Redis) HLen(key string) (int, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HLen(key string) (int, error) {
+	rc := r.RedisClient.Get()
 	length, err := redis.Int(rc.Do("HLEN", key))
 	rc.Close()
 	return length, err
 }
 
-func (this *Redis) HKeys(key string) ([]string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HKeys(key string) ([]string, error) {
+	rc := r.RedisClient.Get()
 	dict, err := redis.Strings(rc.Do("HKEYS", key))
 	rc.Close()
 	return dict, err
 }
 
-func (this *Redis) KVals(key string) ([]string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) KVals(key string) ([]string, error) {
+	rc := r.RedisClient.Get()
 	dict, err := redis.Strings(rc.Do("HVALS", key))
 	rc.Close()
 	return dict, err
 }
 
-func (this *Redis) HGetAll(key string) (map[string]string, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HGetAll(key string) (map[string]string, error) {
+	rc := r.RedisClient.Get()
 	dict, err := redis.StringMap(rc.Do("HGETALL", key))
 	rc.Close()
 	return dict, err
 }
 
-func (this *Redis) HExists(key string, hkey string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HExists(key string, hkey string) (bool, error) {
+	rc := r.RedisClient.Get()
 	ret, err := redis.Bool(rc.Do("HEXISTS", key, hkey))
 	rc.Close()
 	return ret, err
 }
 
-func (this *Redis) HMSet(key string, dict map[string]string) (bool, error) {
-	rc := this.RedisClient.Get()
+func (r *Redis) HMSet(key string, dict map[string]string) (bool, error) {
+	rc := r.RedisClient.Get()
 	suc, err := redis.String(rc.Do("HMSET", redis.Args{}.Add(key).AddFlat(dict)...))
 	rc.Close()
 	return suc == "OK", err

@@ -14,20 +14,20 @@ func NewCompOptions() *CompOptions {
 	return componentOptions
 }
 
-func (this *CompOptions) Set(key string, val interface{}) {
-	this.options[key] = val
+func (c *CompOptions) Set(key string, val interface{}) {
+	c.options[key] = val
 }
 
-func (this *CompOptions) Get(key string) interface{} {
-	val, exist := this.options[key]
+func (c *CompOptions) Get(key string) interface{} {
+	val, exist := c.options[key]
 	if !exist {
 		return nil
 	}
 	return val
 }
 
-func (this *CompOptions) GetBool(key string) bool {
-	val, exist := this.options[key]
+func (c *CompOptions) GetBool(key string) bool {
+	val, exist := c.options[key]
 	if !exist {
 		return false
 	}
@@ -38,8 +38,8 @@ func (this *CompOptions) GetBool(key string) bool {
 	return ret
 }
 
-func (this *CompOptions) GetInt(key string) int {
-	val, exist := this.options[key]
+func (c *CompOptions) GetInt(key string) int {
+	val, exist := c.options[key]
 	if !exist {
 		return 0
 	}
@@ -58,8 +58,8 @@ func (this *CompOptions) GetInt(key string) int {
 	return ret
 }
 
-func (this *CompOptions) GetString(key string) string {
-	val, exist := this.options[key]
+func (c *CompOptions) GetString(key string) string {
+	val, exist := c.options[key]
 	if !exist {
 		return ""
 	}
@@ -70,8 +70,8 @@ func (this *CompOptions) GetString(key string) string {
 	return ret
 }
 
-func (this *CompOptions) GetArgs(key string) map[string]interface{} {
-	val, exist := this.options[key]
+func (c *CompOptions) GetArgs(key string) map[string]interface{} {
+	val, exist := c.options[key]
 	if !exist {
 		return nil
 	}
