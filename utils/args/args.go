@@ -15,30 +15,30 @@ func Parser() *ArgParser {
 	return parser
 }
 
-func (this *ArgParser) AddArg(key string, val string, des string) *ArgParser {
-	this.args[key] = flag.String(key, val, des)
-	return this
+func (a *ArgParser) AddArg(key string, val string, des string) *ArgParser {
+	a.args[key] = flag.String(key, val, des)
+	return a
 }
 
-func (this *ArgParser) Parse() *ArgParser {
+func (a *ArgParser) Parse() *ArgParser {
 	flag.Parse()
-	return this
+	return a
 }
 
-func (this *ArgParser) Get(key string) (string, bool) {
+func (a *ArgParser) Get(key string) (string, bool) {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
 
-	val, exist := this.args[key]
+	val, exist := a.args[key]
 	if !exist {
 		return "", false
 	}
 	return *val, true
 }
 
-func (this *ArgParser) GetInt(key string) (int, bool) {
-	strVal, exist := this.Get(key)
+func (a *ArgParser) GetInt(key string) (int, bool) {
+	strVal, exist := a.Get(key)
 	if !exist {
 		return 0, false
 	}

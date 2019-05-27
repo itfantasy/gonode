@@ -1,36 +1,35 @@
-package stl
+package stl_gen
 
 import (
 	"errors"
 	"sync"
-	//"fmt"
 )
 
-type ListInt struct {
-	array []int32
+type List<T> struct {
+	array []<T>
 	sync.RWMutex
 }
 
-func NewListInt(capacity int) *ListInt {
-	list := ListInt{}
-	list.array = make([]int32, 0, capacity)
+func NewList<T>(capacity int) *List {
+	list := List<T>{}
+	list.array = make([]<T>, 0, capacity)
 	return &list
 }
 
-func NewListIntRaw(raw []int32) *ListInt {
-	list := ListInt{}
+func NewList<T>Raw(raw []<T>) *List {
+	list := List<T>{}
 	list.array = raw
 	return &list
 }
 
-func (l *ListInt) Add(item int32) {
+func (l *List) Add(item <T>) {
 	l.Lock()
 	defer l.Unlock()
 
 	l.array = append(l.array, item)
 }
 
-func (l *ListInt) Insert(index int, item int32) error {
+func (l *List) Insert(index int, item <T>) error {
 	l.Lock()
 	defer l.Unlock()
 
@@ -38,7 +37,7 @@ func (l *ListInt) Insert(index int, item int32) error {
 		return errors.New("ArgumentOutOfRange")
 	}
 
-	temp := make([]int32, 0)
+	temp := make([]<T>, 0)
 	after := append(temp, l.array[index:]...)
 	before := l.array[0:index]
 	l.array = append(before, item)
@@ -46,7 +45,7 @@ func (l *ListInt) Insert(index int, item int32) error {
 	return nil
 }
 
-func (l *ListInt) RemoveAt(index int) error {
+func (l *List) RemoveAt(index int) error {
 	l.Lock()
 	defer l.Unlock()
 
@@ -58,7 +57,7 @@ func (l *ListInt) RemoveAt(index int) error {
 	return nil
 }
 
-func (l *ListInt) Remove(item int32) bool {
+func (l *List) Remove(item <T>) bool {
 	index := l.IndexOf(item)
 	if index < 0 {
 		return false
@@ -67,7 +66,7 @@ func (l *ListInt) Remove(item int32) bool {
 	return true
 }
 
-func (l *ListInt) IndexOf(item int32) int {
+func (l *List) IndexOf(item <T>) int {
 	l.RLock()
 	defer l.RUnlock()
 
@@ -80,42 +79,42 @@ func (l *ListInt) IndexOf(item int32) int {
 	return -1
 }
 
-func (l *ListInt) Contains(item int32) bool {
+func (l *List) Contains(item <T>) bool {
 	return l.IndexOf(item) >= 0
 }
 
-func (l *ListInt) Count() int {
+func (l *List) Count() int {
 	l.RLock()
 	defer l.RUnlock()
 
 	return len(l.array)
 }
 
-func (l *ListInt) Capacity() int {
+func (l *List) Capacity() int {
 	l.RLock()
 	defer l.RUnlock()
 
 	return cap(l.array)
 }
 
-func (l *ListInt) Values() []int32 {
+func (l *List) Values() []<T> {
 	l.RLock()
 	defer l.RUnlock()
 
 	return l.array
 }
 
-func (l *ListInt) Get(index int) (int32, error) {
+func (l *List) Get(index int) (<T>, error) {
 	l.RLock()
 	defer l.RUnlock()
 
 	if index >= len(l.array) {
-		return 0, errors.New("ArgumentOutOfRange")
+		return nil, errors.New("ArgumentOutOfRange")
 	}
 	return l.array[index], nil
 }
 
-func (l *ListInt) Set(index int, item int32) error {
+func (l *List) Set(index int, item <T>) error {
 	l.Lock()
 	defer l.Unlock()
 
@@ -126,7 +125,7 @@ func (l *ListInt) Set(index int, item int32) error {
 	return nil
 }
 
-func (l *ListInt) Clear() {
+func (l *List) Clear() {
 	l.Lock()
 	defer l.Unlock()
 

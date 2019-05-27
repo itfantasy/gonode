@@ -1,28 +1,28 @@
-package stl
+package stl_gen
 
 import (
 	"errors"
 	"sync"
 )
 
-type HashTable struct {
-	_map map[interface{}]interface{}
+type Dictionary<K,V> struct {
+	_map map[<K>]<V>
 	sync.RWMutex
 }
 
-func NewHashTable() *HashTable {
-	dict := HashTable{}
-	dict._map = make(map[interface{}]interface{})
+func NewDictionary<K,V>() *Dictionary<K,V> {
+	dict := Dictionary<K,V>{}
+	dict._map = make(map[<K>]<V>)
 	return &dict
 }
 
-func NewHashTableRaw(raw map[interface{}]interface{}) *HashTable {
-	dict := HashTable{}
+func NewDictionary<K,V>Raw(raw map[<K>]<V>) *Dictionary<K,V> {
+	dict := Dictionary<K,V>{}
 	dict._map = raw
 	return &dict
 }
 
-func (h *HashTable) Add(key interface{}, value interface{}) error {
+func (h *Dictionary<K,V>) Add(key <K>, value <V>) error {
 	h.Lock()
 	defer h.Unlock()
 
@@ -34,7 +34,7 @@ func (h *HashTable) Add(key interface{}, value interface{}) error {
 	return nil
 }
 
-func (h *HashTable) Remove(key interface{}) error {
+func (h *Dictionary<K,V>) Remove(key <K>) error {
 	h.Lock()
 	defer h.Unlock()
 
@@ -46,14 +46,14 @@ func (h *HashTable) Remove(key interface{}) error {
 	return errors.New("Do Not Has The Key!")
 }
 
-func (h *HashTable) Set(key interface{}, value interface{}) {
+func (h *Dictionary<K,V>) Set(key <K>, value <V>) {
 	h.Lock()
 	defer h.Unlock()
 
 	h._map[key] = value
 }
 
-func (h *HashTable) Get(key interface{}) (interface{}, bool) {
+func (h *Dictionary<K,V>) Get(key <K>) (<V>, bool) {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -61,14 +61,14 @@ func (h *HashTable) Get(key interface{}) (interface{}, bool) {
 	return v, exist
 }
 
-func (h *HashTable) Count() int {
+func (h *Dictionary<K,V>) Count() int {
 	h.RLock()
 	defer h.RUnlock()
 
 	return len(h._map)
 }
 
-func (h *HashTable) ContainsKey(key interface{}) bool {
+func (h *Dictionary<K,V>) ContainsKey(key <K>) bool {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -76,7 +76,7 @@ func (h *HashTable) ContainsKey(key interface{}) bool {
 	return exist
 }
 
-func (h *HashTable) ContainsValue(value interface{}) bool {
+func (h *Dictionary<K,V>) ContainsValue(value <V>) bool {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -88,14 +88,14 @@ func (h *HashTable) ContainsValue(value interface{}) bool {
 	return false
 }
 
-func (h *HashTable) KeyValuePairs() map[interface{}]interface{} {
+func (h *Dictionary<K,V>) KeyValuePairs() map[<K>]<V> {
 	h.RLock()
 	defer h.RUnlock()
 
 	return h._map
 }
 
-func (h *HashTable) Clear() {
+func (h *Dictionary<K,V>) Clear() {
 	h.Lock()
 	defer h.Unlock()
 

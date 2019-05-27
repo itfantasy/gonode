@@ -22,112 +22,112 @@ func NewListRaw(raw []interface{}) *List {
 	return &list
 }
 
-func (this *List) Add(item interface{}) {
-	this.Lock()
-	defer this.Unlock()
+func (l *List) Add(item interface{}) {
+	l.Lock()
+	defer l.Unlock()
 
-	this.array = append(this.array, item)
+	l.array = append(l.array, item)
 }
 
-func (this *List) Insert(index int, item interface{}) error {
-	this.Lock()
-	defer this.Unlock()
+func (l *List) Insert(index int, item interface{}) error {
+	l.Lock()
+	defer l.Unlock()
 
-	if index > len(this.array) {
+	if index > len(l.array) {
 		return errors.New("ArgumentOutOfRange")
 	}
 
 	temp := make([]interface{}, 0)
-	after := append(temp, this.array[index:]...)
-	before := this.array[0:index]
-	this.array = append(before, item)
-	this.array = append(this.array, after...)
+	after := append(temp, l.array[index:]...)
+	before := l.array[0:index]
+	l.array = append(before, item)
+	l.array = append(l.array, after...)
 	return nil
 }
 
-func (this *List) RemoveAt(index int) error {
-	this.Lock()
-	defer this.Unlock()
+func (l *List) RemoveAt(index int) error {
+	l.Lock()
+	defer l.Unlock()
 
-	if index > len(this.array) {
+	if index > len(l.array) {
 		return errors.New("ArgumentOutOfRange")
 	}
 
-	this.array = append(this.array[:index], this.array[index+1:]...)
+	l.array = append(l.array[:index], l.array[index+1:]...)
 	return nil
 }
 
-func (this *List) Remove(item interface{}) bool {
-	index := this.IndexOf(item)
+func (l *List) Remove(item interface{}) bool {
+	index := l.IndexOf(item)
 	if index < 0 {
 		return false
 	}
-	this.RemoveAt(index)
+	l.RemoveAt(index)
 	return true
 }
 
-func (this *List) IndexOf(item interface{}) int {
-	this.RLock()
-	defer this.RUnlock()
+func (l *List) IndexOf(item interface{}) int {
+	l.RLock()
+	defer l.RUnlock()
 
-	count := len(this.array)
+	count := len(l.array)
 	for i := 0; i < count; i++ {
-		if this.array[i] == item {
+		if l.array[i] == item {
 			return i
 		}
 	}
 	return -1
 }
 
-func (this *List) Contains(item interface{}) bool {
-	return this.IndexOf(item) >= 0
+func (l *List) Contains(item interface{}) bool {
+	return l.IndexOf(item) >= 0
 }
 
-func (this *List) Count() int {
-	this.RLock()
-	defer this.RUnlock()
+func (l *List) Count() int {
+	l.RLock()
+	defer l.RUnlock()
 
-	return len(this.array)
+	return len(l.array)
 }
 
-func (this *List) Capacity() int {
-	this.RLock()
-	defer this.RUnlock()
+func (l *List) Capacity() int {
+	l.RLock()
+	defer l.RUnlock()
 
-	return cap(this.array)
+	return cap(l.array)
 }
 
-func (this *List) Values() []interface{} {
-	this.RLock()
-	defer this.RUnlock()
+func (l *List) Values() []interface{} {
+	l.RLock()
+	defer l.RUnlock()
 
-	return this.array
+	return l.array
 }
 
-func (this *List) Get(index int) (interface{}, error) {
-	this.RLock()
-	defer this.RUnlock()
+func (l *List) Get(index int) (interface{}, error) {
+	l.RLock()
+	defer l.RUnlock()
 
-	if index >= len(this.array) {
+	if index >= len(l.array) {
 		return nil, errors.New("ArgumentOutOfRange")
 	}
-	return this.array[index], nil
+	return l.array[index], nil
 }
 
-func (this *List) Set(index int, item interface{}) error {
-	this.Lock()
-	defer this.Unlock()
+func (l *List) Set(index int, item interface{}) error {
+	l.Lock()
+	defer l.Unlock()
 
-	if index > len(this.array) {
+	if index > len(l.array) {
 		return errors.New("ArgumentOutOfRange")
 	}
-	this.array[index] = item
+	l.array[index] = item
 	return nil
 }
 
-func (this *List) Clear() {
-	this.Lock()
-	defer this.Unlock()
+func (l *List) Clear() {
+	l.Lock()
+	defer l.Unlock()
 
-	this.array = this.array[0:0]
+	l.array = l.array[0:0]
 }

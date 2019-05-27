@@ -24,65 +24,65 @@ func NewDictionaryRaw(raw map[string]interface{}) *Dictionary {
 	return &dict
 }
 
-func (this *Dictionary) Add(key string, value interface{}) error {
-	this.Lock()
-	defer this.Unlock()
+func (d *Dictionary) Add(key string, value interface{}) error {
+	d.Lock()
+	defer d.Unlock()
 
-	_, exist := this._map[key]
+	_, exist := d._map[key]
 	if exist {
 		return errors.New("Has Contains The Same Key!")
 	}
-	this._map[key] = value
+	d._map[key] = value
 	return nil
 }
 
-func (this *Dictionary) Remove(key string) error {
-	this.Lock()
-	defer this.Unlock()
+func (d *Dictionary) Remove(key string) error {
+	d.Lock()
+	defer d.Unlock()
 
-	_, exist := this._map[key]
+	_, exist := d._map[key]
 	if exist {
-		delete(this._map, key)
+		delete(d._map, key)
 		return nil
 	}
 	return errors.New("Do Not Has The Key:" + key)
 }
 
-func (this *Dictionary) Set(key string, value interface{}) {
-	this.Lock()
-	defer this.Unlock()
+func (d *Dictionary) Set(key string, value interface{}) {
+	d.Lock()
+	defer d.Unlock()
 
-	this._map[key] = value
+	d._map[key] = value
 }
 
-func (this *Dictionary) Get(key string) (interface{}, bool) {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) Get(key string) (interface{}, bool) {
+	d.RLock()
+	defer d.RUnlock()
 
-	v, exist := this._map[key]
+	v, exist := d._map[key]
 	return v, exist
 }
 
-func (this *Dictionary) Count() int {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) Count() int {
+	d.RLock()
+	defer d.RUnlock()
 
-	return len(this._map)
+	return len(d._map)
 }
 
-func (this *Dictionary) ContainsKey(key string) bool {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) ContainsKey(key string) bool {
+	d.RLock()
+	defer d.RUnlock()
 
-	_, exist := this._map[key]
+	_, exist := d._map[key]
 	return exist
 }
 
-func (this *Dictionary) ContainsValue(value interface{}) bool {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) ContainsValue(value interface{}) bool {
+	d.RLock()
+	defer d.RUnlock()
 
-	for _, v := range this._map {
+	for _, v := range d._map {
 		if v == value {
 			return true
 		}
@@ -90,19 +90,19 @@ func (this *Dictionary) ContainsValue(value interface{}) bool {
 	return false
 }
 
-func (this *Dictionary) KeyValuePairs() map[string]interface{} {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) KeyValuePairs() map[string]interface{} {
+	d.RLock()
+	defer d.RUnlock()
 
-	return this._map
+	return d._map
 }
 
-func (this *Dictionary) KeyValueStrings() map[string]string {
-	this.RLock()
-	defer this.RUnlock()
+func (d *Dictionary) KeyValueStrings() map[string]string {
+	d.RLock()
+	defer d.RUnlock()
 
 	temp := make(map[string]string)
-	for k, v := range this._map {
+	for k, v := range d._map {
 		if reflect.TypeOf(v).Name() == "string" {
 			temp[k] = v.(string)
 		} else {
@@ -117,11 +117,11 @@ func (this *Dictionary) KeyValueStrings() map[string]string {
 	return temp
 }
 
-func (this *Dictionary) Clear() {
-	this.Lock()
-	defer this.Unlock()
+func (d *Dictionary) Clear() {
+	d.Lock()
+	defer d.Unlock()
 
-	for key, _ := range this._map {
-		delete(this._map, key)
+	for key, _ := range d._map {
+		delete(d._map, key)
 	}
 }
