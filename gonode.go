@@ -89,7 +89,16 @@ func (g *GoNode) Launch() {
 	}
 	g.Listen(theUrl)
 
-	g.logger.Info("node starting... " + g.info.Id)
+	fmt.Println(` ------- itfantasy.github.io -------
+   ______      _   __          __   
+  / ____/___  / | / /___  ____/ /__ 
+ / / __/ __ \/  |/ / __ \/ __  / _ \
+/ /_/ / /_/ / /|  / /_/ / /_/ /  __/
+\____/\____/_/ |_/\____/\__,_/\___/ 
+
+ --------------------------------- ` + VERSION)
+
+	g.logger.Info("node is starting... " + g.info.Id)
 	g.behavior.Start()
 	select {}
 	g.logger.Error("shuting down!!!")
