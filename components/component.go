@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/itfantasy/gonode/components/etcd"
+	"github.com/itfantasy/gonode/components/mongodb"
 	"github.com/itfantasy/gonode/components/mysql"
 	"github.com/itfantasy/gonode/components/rabbitmq"
 	"github.com/itfantasy/gonode/components/redis"
@@ -21,7 +22,7 @@ const (
 	Nsq             = "nsq"
 	Etcd            = "etcd"
 
-	urlParasError = "illegal url!! —— componenttype://url/host@usr#pass?op_key=op_val&op_key=op_val...."
+	urlParasError = "illegal url!! —— componenttype://usr:pass@url/host?op_key=op_val&op_key=op_val...."
 )
 
 type IComponent interface {
@@ -35,47 +36,56 @@ func NewComponent(url string) (IComponent, error) {
 	tempInfos := strings.Split(url, "?")
 	length := len(tempInfos)
 	if length != 1 && length != 2 {
-		return nil, errors.New(urlParasError)
+		return nil, errors.New(urlParasError + "[A]")
 	}
 	tempUrl := tempInfos[0]
 
 	tempInfos2 := strings.Split(tempUrl, "://")
 	if len(tempInfos2) != 2 {
-		return nil, errors.New(urlParasError)
+		return nil, errors.New(urlParasError + "[B]")
 	}
 
 	compType := tempInfos2[0]
 	tempUrl2 := strings.Split(tempInfos2[1], "@")
-	if len(tempUrl2) != 2 {
-		return nil, errors.New(urlParasError)
+	tempUrl2Len := len(tempUrl2)
+	if tempUrl2Len != 1 && tempUrl2Len != 2 {
+		return nil, errors.New(urlParasError + "[C]")
+	}
+
+	usr := ""
+	pass := ""
+	bAuthor := false
+	if tempUrl2Len == 2 {
+		bAuthor = true
+		tempInfo3 := tempUrl2[0]
+		usrAndPass := strings.Split(tempInfo3, ":")
+		length2 := len(usrAndPass)
+		if length2 != 1 && length2 != 2 {
+			return nil, errors.New(urlParasError + "[D]")
+		}
+		usr = usrAndPass[0]
+		if length2 == 2 {
+			pass = usrAndPass[1]
+		}
 	}
 
 	tempUrl3 := tempUrl2[0]
-	tempInfo3 := tempUrl2[1]
-
+	if bAuthor {
+		tempUrl3 = tempUrl2[1]
+	}
 	urlAndHost := strings.Split(tempUrl3, "/")
 	if len(urlAndHost) != 2 {
-		return nil, errors.New(urlParasError)
+		return nil, errors.New(urlParasError + "[E]" + tempUrl3)
 	}
-
-	usrAndPass := strings.Split(tempInfo3, "$")
-	length2 := len(usrAndPass)
-	if length2 != 1 && length2 != 2 {
-		return nil, errors.New(urlParasError)
-	}
-
 	theurl := urlAndHost[0]
 	host := urlAndHost[1]
-	usr := usrAndPass[0]
-	pass := ""
-	if length2 == 2 {
-		pass = usrAndPass[1]
-	}
 
 	var comp IComponent = nil
 	switch compType {
 	case Redis:
 		comp = redis.NewRedis()
+	case MongoDB:
+		comp = mongodb.NewMongoDB()
 	case MySql:
 		comp = mysql.NewMySql()
 	case RabbitMQ:
