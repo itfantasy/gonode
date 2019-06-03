@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/itfantasy/gonode/components/email"
 	"github.com/itfantasy/gonode/components/etcd"
 	"github.com/itfantasy/gonode/components/mongodb"
 	"github.com/itfantasy/gonode/components/mysql"
@@ -21,6 +22,7 @@ const (
 	Kafka           = "kafka"
 	Nsq             = "nsq"
 	Etcd            = "etcd"
+	Email           = "email"
 
 	urlParasError = "illegal url!! —— componenttype://usr:pass@url/host?op_key=op_val&op_key=op_val...."
 )
@@ -92,6 +94,8 @@ func NewComponent(url string) (IComponent, error) {
 		comp = rabbitmq.NewRabbitMQ()
 	case Etcd:
 		comp = etcd.NewEtcd()
+	case Email:
+		comp = email.NewEmail()
 	}
 
 	if comp == nil {

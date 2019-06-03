@@ -17,6 +17,9 @@ type NodeInfo struct {
 
 	RegComp string
 
+	RepComp string
+	RepTo   string
+
 	Sig string
 
 	UserDatas map[string]string

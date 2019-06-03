@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/components"
+	"github.com/itfantasy/gonode/components/email"
 	"github.com/itfantasy/gonode/core/datacenter"
 	"github.com/itfantasy/gonode/core/erl"
 	"github.com/itfantasy/gonode/core/logger"
@@ -26,6 +28,8 @@ type GoNode struct {
 
 	logger *logger.Logger
 	dc     datacenter.IDataCenter
+
+	mail *email.Email
 
 	netWorkers map[string]nets.INetWorker
 
@@ -57,6 +61,7 @@ func (g *GoNode) Launch() {
 	}
 	g.info = info
 	g.event = newEventHandler(g)
+	erl.BindErrorReporter(g.event)
 
 	// init the logger
 	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, CHAN_LOG, g.info.LogComp)
@@ -65,7 +70,21 @@ func (g *GoNode) Launch() {
 		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
 	}
 	g.logger = logger
-	erl.SetLogger(g.logger)
+
+	// init the email
+	if g.info.RepComp != "" {
+		repComp, err := components.NewComponent(g.info.RepComp)
+		if err != nil {
+			g.logger.Error(err.Error())
+			fmt.Println("Initialize Faild!! Have setted up the Error Reporter, but canot create it as an Email Componment! .." + err.Error())
+			return
+		}
+		mail, ok := repComp.(*email.Email)
+		if !ok {
+			fmt.Println("Initialize Faild!! Have setted up the Error Reporter, but canot create it as an Email Componment! ..")
+		}
+		g.mail = mail
+	}
 
 	// init the dc
 	dc, err := datacenter.NewDataCenter(g.info.RegComp)
@@ -216,7 +235,21 @@ func (g *GoNode) checkTargetId(id string) bool {
 
 func (g *GoNode) autoRecover() {
 	if err := recover(); err != nil {
-		g.logger.Error("auto recovering..." + fmt.Sprint(err) +
-			"\r\n=============== - CallStackInfo - =============== \r\n" + string(debug.Stack()))
+		g.reportError(err)
 	}
+}
+
+func (g *GoNode) reportError(err interface{}) {
+	title := "!!! Auto Recovering..."
+	content := fmt.Sprint(err) +
+		"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
+	if g.mail != nil {
+		go func() {
+			err := g.mail.SendTo(g.info.RepTo, title, strings.Replace(content, "\r", "<br/>", -1))
+			if err != nil {
+				g.logger.Error(err)
+			}
+		}()
+	}
+	g.logger.Error(title + content)
 }

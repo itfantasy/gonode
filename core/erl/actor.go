@@ -1,10 +1,5 @@
 package erl
 
-import (
-	"fmt"
-	"runtime/debug"
-)
-
 type Actor struct {
 	pid       int64
 	thefunc   func([]interface{})
@@ -39,12 +34,8 @@ func newActor(pid int64, fun func([]interface{}), capacity int) *Actor {
 func (a *Actor) do(args []interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			errMsg := "auto recovering..." + fmt.Sprint(err) + "  args:" + fmt.Sprint(args) +
-				"\r\n=============== - CallStackInfo - =============== \r\n" + string(debug.Stack())
-			if elogger != nil {
-				elogger.Error(errMsg)
-			} else {
-				fmt.Println(errMsg)
+			if reporter != nil {
+				reporter.OnReportError(err)
 			}
 		}
 	}()

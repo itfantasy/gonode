@@ -3,9 +3,12 @@ package erl
 import (
 	"sync"
 
-	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/utils/snowflake"
 )
+
+type IErrorReporter interface {
+	OnReportError(interface{})
+}
 
 var actors sync.Map
 
@@ -68,8 +71,8 @@ func remove(pid int64) {
 	actors.Delete(pid)
 }
 
-var elogger *logger.Logger
+var reporter IErrorReporter
 
-func SetLogger(log *logger.Logger) {
-	elogger = log
+func BindErrorReporter(r IErrorReporter) {
+	reporter = r
 }

@@ -42,6 +42,10 @@ func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
 }
 
+func (e *EventHandler) OnReportError(err interface{}) {
+	e.node.reportError(err)
+}
+
 func (g *GoNode) onConn(id string) {
 	defer g.autoRecover()
 	g.logger.Info("conn to " + id + " succeed!")
