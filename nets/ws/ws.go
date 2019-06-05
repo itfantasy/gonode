@@ -85,20 +85,26 @@ func (w *WSNetWorker) onMsg(conn *websocket.Conn, msg []byte) {
 	}
 }
 
-func (w *WSNetWorker) onClose(conn *websocket.Conn) {
-	id, exists := nets.GetInfoIdByConn(conn)
-	if exists {
-		w.eventListener.OnClose(id)
+func (w *WSNetWorker) onClose(id string, conn *websocket.Conn, reason error) {
+	if id != "" {
+		w.eventListener.OnClose(id, reason)
 		nets.RemoveConnInfo(id) // remove the closed conn from local record
-		conn.Close()
 	}
+	conn.Close()
 }
 
 func (w *WSNetWorker) onError(conn *websocket.Conn, err error) {
-	id, exists := nets.GetInfoIdByConn(conn)
-	if exists {
-		w.eventListener.OnError(id, err)
-		w.onClose(conn) // close the conn with errors
+	if conn != nil {
+		id, exists := nets.GetInfoIdByConn(conn)
+		if exists {
+			w.eventListener.OnError(id, err)
+			w.onClose(id, conn, err) // close the conn with errors
+		} else {
+			w.eventListener.OnError("", err)
+			w.onClose(id, conn, err) // close the conn with errors
+		}
+	} else {
+		w.eventListener.OnError("", err)
 	}
 }
 
@@ -111,7 +117,7 @@ func (w *WSNetWorker) BindEventListener(eventListener nets.INetEventListener) er
 }
 
 func (w *WSNetWorker) Close(id string, conn net.Conn) error {
-	w.eventListener.OnClose(id)
+	w.eventListener.OnClose(id, nil)
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

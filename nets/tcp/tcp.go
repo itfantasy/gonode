@@ -198,13 +198,12 @@ func (t *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	t.eventListener.OnMsg(id, msg)
 }
 
-func (t *TcpNetWorker) onClose(conn net.Conn) {
-	id, exists := nets.GetInfoIdByConn(conn)
-	if exists {
-		t.eventListener.OnClose(id)
+func (t *TcpNetWorker) onClose(id string, conn net.Conn, reason error) {
+	if id != "" {
+		t.eventListener.OnClose(id, reason)
 		nets.RemoveConnInfo(id) // remove the closed conn from local record
-		conn.Close()
 	}
+	conn.Close()
 }
 
 func (t *TcpNetWorker) onError(conn net.Conn, err error) {
@@ -212,10 +211,10 @@ func (t *TcpNetWorker) onError(conn net.Conn, err error) {
 		id, exists := nets.GetInfoIdByConn(conn)
 		if exists {
 			t.eventListener.OnError(id, err)
-			t.onClose(conn) // close the conn with errors
+			t.onClose(id, conn, err) // close the conn with errors
 		} else {
 			t.eventListener.OnError("", err)
-			t.onClose(conn) // close the conn with errors
+			t.onClose(id, conn, err) // close the conn with errors
 		}
 	} else {
 		t.eventListener.OnError("", err)
@@ -231,7 +230,7 @@ func (t *TcpNetWorker) BindEventListener(eventListener nets.INetEventListener) e
 }
 
 func (t *TcpNetWorker) Close(id string, conn net.Conn) error {
-	t.eventListener.OnClose(id)
+	t.eventListener.OnClose(id, nil)
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

@@ -114,13 +114,12 @@ func (k *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
 	k.eventListener.OnMsg(id, msg)
 }
 
-func (k *KcpNetWorker) onClose(conn net.Conn) {
-	id, exists := nets.GetInfoIdByConn(conn)
-	if exists {
-		k.eventListener.OnClose(id)
+func (k *KcpNetWorker) onClose(id string, conn net.Conn, reason error) {
+	if id != "" {
+		k.eventListener.OnClose(id, reason)
 		nets.RemoveConnInfo(id) // remove the closed conn from local record
-		conn.Close()
 	}
+	conn.Close()
 }
 
 func (k *KcpNetWorker) onError(conn net.Conn, err error) {
@@ -128,10 +127,10 @@ func (k *KcpNetWorker) onError(conn net.Conn, err error) {
 		id, exists := nets.GetInfoIdByConn(conn)
 		if exists {
 			k.eventListener.OnError(id, err)
-			k.onClose(conn) // close the conn with errors
+			k.onClose(id, conn, err) // close the conn with errors
 		} else {
 			k.eventListener.OnError("", err)
-			k.onClose(conn) // close the conn with errors
+			k.onClose(id, conn, err) // close the conn with errors
 		}
 	} else {
 		k.eventListener.OnError("", err)
@@ -147,7 +146,7 @@ func (k *KcpNetWorker) BindEventListener(eventListener nets.INetEventListener) e
 }
 
 func (k *KcpNetWorker) Close(id string, conn net.Conn) error {
-	k.eventListener.OnClose(id)
+	k.eventListener.OnClose(id, nil)
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

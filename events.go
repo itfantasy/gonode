@@ -22,8 +22,8 @@ func (e *EventHandler) OnMsg(id string, msg []byte) {
 	e.node.onMsg(id, msg)
 }
 
-func (e *EventHandler) OnClose(id string) {
-	e.node.onClose(id)
+func (e *EventHandler) OnClose(id string, reason error) {
+	e.node.onClose(id, reason)
 }
 
 func (e *EventHandler) OnError(id string, err error) {
@@ -57,9 +57,9 @@ func (g *GoNode) onMsg(id string, msg []byte) {
 	g.behavior.OnMsg(id, msg)
 }
 
-func (g *GoNode) onClose(id string) {
+func (g *GoNode) onClose(id string, reason error) {
 	defer g.autoRecover()
-	g.behavior.OnClose(id)
+	g.behavior.OnClose(id, reason)
 }
 
 func (g *GoNode) onError(id string, err error) {
