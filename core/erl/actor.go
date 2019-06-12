@@ -32,13 +32,7 @@ func newActor(pid int64, fun func([]interface{}), capacity int) *Actor {
 }
 
 func (a *Actor) do(args []interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			if reporter != nil {
-				reporter.OnReportError(err)
-			}
-		}
-	}()
+	defer AutoRecover(digester)
 	a.thefunc(args)
 }
 

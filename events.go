@@ -1,6 +1,7 @@
 package gonode
 
 import (
+	"github.com/itfantasy/gonode/core/erl"
 	"github.com/itfantasy/gonode/nets"
 )
 
@@ -15,14 +16,17 @@ func newEventHandler(node *GoNode) *EventHandler {
 }
 
 func (e *EventHandler) OnConn(id string) {
+	defer erl.AutoRecover(e)
 	e.node.onConn(id)
 }
 
 func (e *EventHandler) OnMsg(id string, msg []byte) {
+	defer erl.AutoRecover(e)
 	e.node.onMsg(id, msg)
 }
 
 func (e *EventHandler) OnClose(id string, reason error) {
+	defer erl.AutoRecover(e)
 	e.node.onClose(id, reason)
 }
 
@@ -42,28 +46,24 @@ func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
 }
 
-func (e *EventHandler) OnReportError(err interface{}) {
+func (e *EventHandler) OnDigestError(err interface{}) {
 	e.node.reportError(err)
 }
 
 func (g *GoNode) onConn(id string) {
-	defer g.autoRecover()
 	g.logger.Info("conn to " + id + " succeed!")
 	g.behavior.OnConn(id)
 }
 
 func (g *GoNode) onMsg(id string, msg []byte) {
-	defer g.autoRecover()
 	g.behavior.OnMsg(id, msg)
 }
 
 func (g *GoNode) onClose(id string, reason error) {
-	defer g.autoRecover()
 	g.behavior.OnClose(id, reason)
 }
 
 func (g *GoNode) onError(id string, err error) {
-	defer g.autoRecover()
 	g.logger.Error("the node[" + id + "] occurs errors:" + err.Error())
 }
 

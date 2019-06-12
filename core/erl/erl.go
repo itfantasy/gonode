@@ -1,14 +1,12 @@
 package erl
 
 import (
+	"fmt"
+	"runtime/debug"
 	"sync"
 
 	"github.com/itfantasy/gonode/utils/snowflake"
 )
-
-type IErrorReporter interface {
-	OnReportError(interface{})
-}
 
 var actors sync.Map
 
@@ -71,8 +69,24 @@ func remove(pid int64) {
 	actors.Delete(pid)
 }
 
-var reporter IErrorReporter
+type ErrorDigester interface {
+	OnDigestError(interface{})
+}
 
-func BindErrorReporter(r IErrorReporter) {
-	reporter = r
+func AutoRecover(e ErrorDigester) {
+	if err := recover(); err != nil {
+		if e != nil {
+			e.OnDigestError(err)
+		} else {
+			content := "!!! Auto Recovering...  " + fmt.Sprint(err) +
+				"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
+			fmt.Println(content)
+		}
+	}
+}
+
+var digester ErrorDigester
+
+func BindErrorDigester(e ErrorDigester) {
+	digester = e
 }

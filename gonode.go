@@ -61,7 +61,7 @@ func (g *GoNode) Launch() {
 	}
 	g.info = info
 	g.event = newEventHandler(g)
-	erl.BindErrorReporter(g.event)
+	erl.BindErrorDigester(g.event)
 
 	// init the logger
 	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, CHAN_LOG, g.info.LogComp)
@@ -232,12 +232,6 @@ func (g *GoNode) checkTargetId(id string) bool {
 }
 
 // -------------- other ----------------
-
-func (g *GoNode) autoRecover() {
-	if err := recover(); err != nil {
-		g.reportError(err)
-	}
-}
 
 func (g *GoNode) reportError(err interface{}) {
 	title := "!!! Auto Recovering..."
