@@ -242,7 +242,7 @@ func (t *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id 
 	if err != nil {
 		return err
 	}
-	_, err2 := conn.Write(datas)
+	err2 := t.Send(conn, datas)
 	if err2 != nil {
 		return err2
 	}
