@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/itfantasy/gonode/core/binbuf/types"
 )
@@ -11,6 +12,8 @@ import (
 type BinParser struct {
 	buffer      []byte
 	bytesBuffer *bytes.Buffer
+	err         error
+	errInfo     string
 }
 
 func BuildParser(buffer []byte, offset int) *BinParser {
@@ -21,138 +24,169 @@ func BuildParser(buffer []byte, offset int) *BinParser {
 	return parser
 }
 
-func (b *BinParser) Byte() (byte, error) {
+func (b *BinParser) Byte() byte {
+	if b.err != nil {
+		return 0
+	}
 	var ret byte
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return 0, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Byte()")
+		return 0
 	}
-	return ret, nil
+	return ret
 }
 
 func (b *BinParser) Bytes() []byte {
 	return b.buffer
 }
 
-func (b *BinParser) Bool() (bool, error) {
+func (b *BinParser) Bool() bool {
+	if b.err != nil {
+		return false
+	}
 	var ret bool
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return false, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Bool()")
+		return false
 	}
-	return ret, nil
+	return ret
 }
 
-func (b *BinParser) Short() (int16, error) {
+func (b *BinParser) Short() int16 {
+	if b.err != nil {
+		return 0
+	}
 	var ret int16
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return 0, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Short()")
+		return 0
 	}
-	return ret, nil
+	return ret
 }
 
-func (b *BinParser) Int() (int32, error) {
+func (b *BinParser) Int() int32 {
+	if b.err != nil {
+		return 0
+	}
 	var ret int32
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return 0, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Int()")
+		return 0
 	}
-	return ret, nil
+	return ret
 }
 
-func (b *BinParser) Long() (int64, error) {
+func (b *BinParser) Long() int64 {
+	if b.err != nil {
+		return 0
+	}
 	var ret int64
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return 0, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Long()")
+		return 0
 	}
-	return ret, nil
+	return ret
 }
 
-func (b *BinParser) String() (string, error) {
-	length, err := b.Int() // get the string len
-	if err != nil {
-		return "", err
+func (b *BinParser) String() string {
+	length := b.Int() // get the string len
+	if b.err != nil {
+		return ""
 	}
-	if length > 10240 {
-		return "", errors.New("illegal length for a string!!")
+	if length > 10240 || length <= 0 {
+		b.err = errors.New("illegal length for a string!!")
+		b.errInfo = fmt.Sprintf("String()")
+		return ""
 	}
 	var tempBuffer []byte = make([]byte, length)
-	if binary.Read(b.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
-		return "", err
+	if err := binary.Read(b.bytesBuffer, binary.LittleEndian, &tempBuffer); err != nil {
+		b.err = err
+		b.errInfo = fmt.Sprintf("String()")
+		return ""
 	}
-	return string(tempBuffer), nil
+	return string(tempBuffer)
 }
 
-func (b *BinParser) Float() (float32, error) {
+func (b *BinParser) Float() float32 {
+	if b.err != nil {
+		return 0
+	}
 	var ret float32
 	err := binary.Read(b.bytesBuffer, binary.LittleEndian, &ret)
 	if err != nil {
-		return 0, err
+		b.err = err
+		b.errInfo = fmt.Sprintf("Float()")
+		return 0
 	}
-	return ret, nil
+	return ret
 }
 
-func (b *BinParser) Ints() ([]int32, error) {
-	length, err := b.Int() // get the []int32 len
-	if err != nil {
-		return nil, err
+func (b *BinParser) Ints() []int32 {
+	length := b.Int() // get the []int32 len
+	if b.err != nil {
+		return nil
 	}
 	array := make([]int32, 0, length)
 	var i int32
 	for i = 0; i < length; i++ {
-		item, ierr := b.Int()
-		if ierr != nil {
-			return nil, ierr
+		item := b.Int()
+		if b.err != nil {
+			return nil
 		}
 		array = append(array, item)
 	}
-	return array, nil
+	return array
 }
 
-func (b *BinParser) Array() ([]interface{}, error) {
-	length, err := b.Int() // get the []int32 len
-	if err != nil {
-		return nil, err
+func (b *BinParser) Array() []interface{} {
+	length := b.Int() // get the []int32 len
+	if b.err != nil {
+		return nil
 	}
 	array := make([]interface{}, 0, length)
 	var i int32
 	for i = 0; i < length; i++ {
-		item, ierr := b.Object()
-		if ierr != nil {
-			return nil, ierr
+		item := b.Object()
+		if b.err != nil {
+			return nil
 		}
 		array = append(array, item)
 	}
-	return array, nil
+	return array
 }
 
-func (b *BinParser) Hash() (map[interface{}]interface{}, error) {
-	length, err := b.Int() // get the hash len
-	if err != nil {
-		return nil, err
+func (b *BinParser) Hash() map[interface{}]interface{} {
+	length := b.Int() // get the hash len
+	if b.err != nil {
+		return nil
 	}
 	hash := make(map[interface{}]interface{})
 	var i int32
 	for i = 0; i < length; i++ {
-		k, kerr := b.Object()
-		if kerr != nil {
-			return nil, kerr
-		}
-		v, verr := b.Object()
-		if verr != nil {
-			return nil, verr
+		k := b.Object()
+		v := b.Object()
+		if b.err != nil {
+			return nil
 		}
 		hash[k] = v
 	}
-	return hash, nil
+	return hash
 }
 
-func (b *BinParser) Object() (interface{}, error) {
-	c, err := b.Byte()
-	if err != nil {
-		return nil, err
+func (b *BinParser) Object() interface{} {
+	c := b.Byte()
+	if b.err != nil {
+		return nil
 	}
 	switch c {
 	case types.Byte:
@@ -176,15 +210,30 @@ func (b *BinParser) Object() (interface{}, error) {
 	case types.Hash:
 		return b.Hash()
 	case types.Null:
-		if none, err := b.Byte(); err != nil {
-			return nil, err
+		none := b.Byte()
+		if b.err != nil {
+			return nil
 		} else if none != byte(0) {
-			return nil, errors.New("unknow type !!!")
+			b.err = errors.New("unknow type !!!")
+			b.errInfo = fmt.Sprintf("Object()")
+			return nil
 		} else {
-			return nil, nil
+			return nil
 		}
 	default:
-		return nil, errors.New("unknow type !!!")
+		b.err = errors.New("unknow type !!!")
+		b.errInfo = fmt.Sprintf("Object()")
+		return nil
 	}
-	return nil, errors.New("unknow type !!!")
+	b.err = errors.New("unknow type !!!")
+	b.errInfo = fmt.Sprintf("Object()")
+	return nil
+}
+
+func (b *BinParser) Error() error {
+	return b.err
+}
+
+func (b *BinParser) ErrorInfo() string {
+	return b.errInfo + "|" + b.err.Error()
 }

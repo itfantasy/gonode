@@ -57,14 +57,14 @@ func (t *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 			rcvbuf.AddDataLen(n)
 			for rcvbuf.Count() > PCK_MIN_SIZE {
 				parser := binbuf.BuildParser(rcvbuf.Slice(), 0)
-				head, err := parser.Int()
-				if err != nil || head != PCK_HEADER {
+				head := parser.Int()
+				if parser.Error() != nil || head != PCK_HEADER {
 					rcvbuf.Clear()
 					break
 				}
-				l, err := parser.Short()
+				l := parser.Short()
 				length := int(l)
-				if err != nil {
+				if parser.Error() != nil {
 					rcvbuf.Clear()
 					break
 				} else if length > rcvbuf.Count() {
