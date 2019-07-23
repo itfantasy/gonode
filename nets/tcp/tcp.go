@@ -155,10 +155,7 @@ func (t *TcpNetWorker) Connect(id string, url string, origin string) error {
 
 func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	datalen := len(msg)
-	buf, err := binbuf.BuildBuffer(datalen + PCK_MIN_SIZE)
-	if err != nil {
-		return err
-	}
+	buf := binbuf.BuildBuffer(datalen + PCK_MIN_SIZE)
 	defer func() {
 		msg = nil // dispose the send buffer
 		buf.Dispose()
@@ -167,8 +164,8 @@ func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	buf.PushInt(PCK_HEADER)
 	buf.PushShort(int16(datalen))
 	buf.PushBytes(msg)
-	_, err2 := conn.Write(buf.Bytes())
-	return err2
+	_, err := conn.Write(buf.Bytes())
+	return err
 }
 
 func (t *TcpNetWorker) onConn(conn net.Conn, id string) {

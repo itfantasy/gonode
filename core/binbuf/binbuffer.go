@@ -16,15 +16,12 @@ type BinBuffer struct {
 	errInfo     string
 }
 
-func BuildBuffer(capacity int) (*BinBuffer, error) {
-	if capacity > 10240 {
-		return nil, errors.New("illegal length for the buffer!!")
-	}
+func BuildBuffer(capacity int) *BinBuffer {
 	buffer := new(BinBuffer)
 	buffer.buffer = make([]byte, capacity)
 	buffer.bytesBuffer = bytes.NewBuffer(buffer.buffer)
 	buffer.bytesBuffer.Reset()
-	return buffer, nil
+	return buffer
 }
 
 func (b *BinBuffer) PushByte(value byte) {
@@ -94,6 +91,9 @@ func (b *BinBuffer) PushLong(value int64) {
 }
 
 func (b *BinBuffer) PushString(value string) {
+	if b.err != nil {
+		return
+	}
 	buffer := ([]byte)(value)
 	b.PushInt(int32(len(buffer))) // write the len of the string
 	if b.err != nil {
@@ -118,49 +118,67 @@ func (b *BinBuffer) PushFloat(value float32) {
 }
 
 func (b *BinBuffer) PushInts(value []int32) {
+	if b.err != nil {
+		return
+	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the []int
 	if b.err != nil {
+		b.errInfo = fmt.Sprintf("PushInts(%v)", value)
 		return
 	}
 	for _, v := range value {
 		b.PushInt(v)
 		if b.err != nil {
+			b.errInfo = fmt.Sprintf("PushInts(%v)", value)
 			return
 		}
 	}
 }
 
 func (b *BinBuffer) PushArray(value []interface{}) {
+	if b.err != nil {
+		return
+	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the []int
 	if b.err != nil {
+		b.errInfo = fmt.Sprintf("PushArray(%v)", value)
 		return
 	}
 	for _, v := range value {
 		b.PushObject(v)
 		if b.err != nil {
+			b.errInfo = fmt.Sprintf("PushArray(%v)", value)
 			return
 		}
 	}
 }
 
 func (b *BinBuffer) PushHash(value map[interface{}]interface{}) {
+	if b.err != nil {
+		return
+	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the hash
 	if b.err != nil {
+		b.errInfo = fmt.Sprintf("PushHash(%v)", value)
 		return
 	}
 	for k, v := range value {
 		b.PushObject(k)
 		b.PushObject(v)
 		if b.err != nil {
+			b.errInfo = fmt.Sprintf("PushHash(%v)", value)
 			return
 		}
 	}
 }
 
 func (b *BinBuffer) PushObject(value interface{}) {
+	if b.err != nil {
+		return
+	}
 	if value == nil {
 		b.PushByte(types.Null)
 		b.PushByte(byte(0))
@@ -202,6 +220,8 @@ func (b *BinBuffer) PushObject(value interface{}) {
 		b.PushHash(value.(map[interface{}]interface{}))
 	default:
 		b.err = errors.New("unsupported type!!")
+	}
+	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushObject(%v)", value)
 	}
 }
@@ -219,5 +239,8 @@ func (b *BinBuffer) Error() error {
 }
 
 func (b *BinBuffer) ErrorInfo() string {
-	return b.errInfo + "|" + b.err.Error()
+	if b.err != nil {
+		return b.errInfo + "|" + b.err.Error()
+	}
+	return ""
 }
