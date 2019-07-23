@@ -75,7 +75,7 @@ func disposeConnState(id string) {
 	}
 }
 
-func ResetConnState(id string) {
+func ResetConnState(id string, netWorker INetWorker, msg []byte) bool {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 
@@ -83,5 +83,17 @@ func ResetConnState(id string) {
 	if exist {
 		state.ping = false
 		state.ts = ts.MS()
+		if msg[0] == 35 { // '#'
+			strmsg := string(msg)
+			if strmsg == "#pong" {
+				fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
+				return true
+			} else if strmsg == "#ping" {
+				fmt.Println("re sending pong to..." + id)
+				go netWorker.Send(state.conn, []byte("#pong")) // return the pong pck
+				return true
+			}
+		}
 	}
+	return false
 }

@@ -8,38 +8,50 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/itfantasy/gonode/behaviors/gen_event"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/components"
-	"github.com/itfantasy/gonode/components/email"
+
 	"github.com/itfantasy/gonode/core/datacenter"
 	"github.com/itfantasy/gonode/core/erl"
 	"github.com/itfantasy/gonode/core/logger"
+	"github.com/itfantasy/gonode/core/sysmonitor"
+
 	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/tcp"
 	"github.com/itfantasy/gonode/nets/ws"
+
 	"github.com/itfantasy/gonode/utils/snowflake"
 )
 
 type GoNode struct {
 	info     *gen_server.NodeInfo
 	behavior gen_server.GenServer
-	event    *EventHandler
 
 	logger *logger.Logger
 	dc     datacenter.IDataCenter
 
-	mail *email.Email
+	eventer gen_event.GenEventer
+	monitor *sysmonitor.SysMonitor
 
 	netWorkers map[string]nets.INetWorker
 
-	lock sync.RWMutex
+	event *EventHandler
+	lock  sync.RWMutex
 }
 
 // -------------- init ----------------
 
-func (g *GoNode) Bind(behavior gen_server.GenServer) {
-	g.behavior = behavior
+func (g *GoNode) Bind(behavior interface{}) error {
+	switch behavior.(type) {
+	case gen_server.GenServer:
+		g.behavior = behavior.(gen_server.GenServer)
+	case gen_event.GenEventer:
+		g.eventer = behavior.(gen_event.GenEventer)
+	default:
+		return errors.New("illegal behavior type!!")
+	}
+	return nil
 }
 
 func (g *GoNode) Launch() {
@@ -66,39 +78,33 @@ func (g *GoNode) Launch() {
 	// init the logger
 	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, CHAN_LOG, g.info.LogComp)
 	if warn != nil {
-		g.logger.Warn(warn.Error())
-		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!")
+		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!" + warn.Error())
 	}
 	g.logger = logger
-
-	// init the email
-	if g.info.RepComp != "" {
-		repComp, err := components.NewComponent(g.info.RepComp)
-		if err != nil {
-			g.logger.Error(err.Error())
-			fmt.Println("Initialize Faild!! Have setted up the Error Reporter, but canot create it as an Email Componment! .." + err.Error())
-			return
-		}
-		mail, ok := repComp.(*email.Email)
-		if !ok {
-			fmt.Println("Initialize Faild!! Have setted up the Error Reporter, but canot create it as an Email Componment! ..")
-		}
-		g.mail = mail
-	}
 
 	// init the dc
 	dc, err := datacenter.NewDataCenter(g.info.RegComp)
 	if err != nil {
-		fmt.Println("Initialize Faild!! Init the DataCenter failed!!")
-		g.logger.Error(err.Error())
+		fmt.Println("Initialize Faild!! Init the DataCenter failed!!" + err.Error())
 		return
 	}
 	g.dc = dc
 	g.dc.BindCallbacks(g.event)
 	err2 := g.dc.RegisterAndDetect(g.info, CHAN_REG, 5000)
 	if err2 != nil {
-		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!")
-		g.logger.Error(err2.Error())
+		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!" + err2.Error())
+		return
+	}
+
+	// init the monitor
+	if g.eventer != nil {
+		monitor, err := sysmonitor.NewSysMonitor(g.info.Id, g.eventer, CHAN_MONI)
+		if err != nil {
+			fmt.Println("Initialize Faild!! You have binded a eventer behavior, but the eventconf is incorrect!!" + err.Error())
+			return
+		}
+		g.monitor = monitor
+		g.monitor.StartMonitoring()
 	}
 
 	theUrl, err := g.getListenUrl(g.info.Url)
@@ -221,6 +227,10 @@ func (g *GoNode) randomCntId() string {
 }
 
 func (g *GoNode) checkTargetId(id string) bool {
+	if g.info.BackEnds == ALLNODES {
+		return true
+	}
+
 	label := strings.Split(id, "-")[0]
 	backEnds := strings.Split(g.info.BackEnds, ",")
 	for _, item := range backEnds {
@@ -237,13 +247,8 @@ func (g *GoNode) reportError(err interface{}) {
 	title := "!!! Auto Recovering..."
 	content := fmt.Sprint(err) +
 		"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
-	if g.mail != nil {
-		go func() {
-			err := g.mail.SendTo(g.info.RepTo, title, strings.Replace(content, "\r", "<br/>", -1))
-			if err != nil {
-				g.logger.Error(err)
-			}
-		}()
+	if g.eventer != nil {
+		g.eventer.OnReportError(title, content)
 	}
 	g.logger.Error(title + content)
 }

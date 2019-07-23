@@ -21,7 +21,7 @@ func Launch() {
 	node.Launch()
 }
 
-func Bind(behavior gen_server.GenServer) {
+func Bind(behavior interface{}) {
 	node.Bind(behavior)
 }
 

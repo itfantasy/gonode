@@ -3,7 +3,6 @@ package kcp
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 
@@ -99,19 +98,9 @@ func (k *KcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (k *KcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
-	nets.ResetConnState(id)
-	if msg[0] == 35 { // '#'
-		strmsg := string(msg)
-		if strmsg == "#pong" {
-			fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
-			return
-		} else if strmsg == "#ping" {
-			fmt.Println("re sending pong to..." + id)
-			go k.Send(conn, []byte("#pong")) // return the pong pck
-			return
-		}
+	if !nets.ResetConnState(id, k, msg) {
+		k.eventListener.OnMsg(id, msg)
 	}
-	k.eventListener.OnMsg(id, msg)
 }
 
 func (k *KcpNetWorker) onClose(id string, conn net.Conn, reason error) {
@@ -178,7 +167,6 @@ func (k *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	id, b := k.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
 		k.onConn(conn, id)
-		fmt.Println("handshake succeed !!")
 		return nil
 	} else {
 		return errors.New("handshake illegal!!")

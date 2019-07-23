@@ -3,7 +3,6 @@ package tcp
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 
@@ -183,19 +182,9 @@ func (t *TcpNetWorker) onConn(conn net.Conn, id string) {
 }
 
 func (t *TcpNetWorker) onMsg(conn net.Conn, id string, msg []byte) {
-	nets.ResetConnState(id)
-	if msg[0] == 35 { // '#'
-		strmsg := string(msg)
-		if strmsg == "#pong" {
-			fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
-			return
-		} else if strmsg == "#ping" {
-			fmt.Println("re sending pong to..." + id)
-			go t.Send(conn, []byte("#pong")) // return the pong pck
-			return
-		}
+	if !nets.ResetConnState(id, t, msg) {
+		t.eventListener.OnMsg(id, msg)
 	}
-	t.eventListener.OnMsg(id, msg)
 }
 
 func (t *TcpNetWorker) onClose(id string, conn net.Conn, reason error) {
