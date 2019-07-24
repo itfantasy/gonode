@@ -10,6 +10,7 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_event"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/behaviors/supervisor"
 
 	"github.com/itfantasy/gonode/core/datacenter"
 	"github.com/itfantasy/gonode/core/erl"
@@ -48,6 +49,14 @@ func (g *GoNode) Bind(behavior interface{}) error {
 		g.behavior = behavior.(gen_server.GenServer)
 	case gen_event.GenEventer:
 		g.eventer = behavior.(gen_event.GenEventer)
+	case supervisor.Supervisor:
+		super := behavior.(supervisor.Supervisor)
+		superNode := supervisor.NewSuperNode()
+		err := superNode.BindAndInit(SUPERVISOR, super, ALLNODES, CHAN_LOG, CHAN_MONI)
+		if err != nil {
+			return errors.New("Bind Supervisor Failed!!" + err.Error())
+		}
+		g.behavior = superNode
 	default:
 		return errors.New("illegal behavior type!!")
 	}
@@ -123,6 +132,7 @@ func (g *GoNode) Launch() {
 
  --------------------------------- ` + VERSION)
 
+	fmt.Println(g.info.ToString())
 	g.logger.Info("node is starting... " + g.info.Id)
 	g.behavior.Start()
 	select {}
@@ -227,7 +237,7 @@ func (g *GoNode) randomCntId() string {
 }
 
 func (g *GoNode) checkTargetId(id string) bool {
-	if g.info.BackEnds == ALLNODES {
+	if g.info.BackEnds == ALLNODES && id != g.info.Id {
 		return true
 	}
 

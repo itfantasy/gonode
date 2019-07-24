@@ -21,8 +21,8 @@ func Launch() {
 	node.Launch()
 }
 
-func Bind(behavior interface{}) {
-	node.Bind(behavior)
+func Bind(behavior interface{}) error {
+	return node.Bind(behavior)
 }
 
 func Listen(url string) {
