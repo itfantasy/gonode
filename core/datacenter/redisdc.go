@@ -130,3 +130,9 @@ func (r *RedisDC) OnSubError(channel string, err error) {
 		r.callbacks.OnDCError(err)
 	}
 }
+func (e *RedisDC) ApplyDestruction(id string) bool {
+	// TODO: apply for destruction of one node (only supervisor)
+	// maybe we should consider the appling count or time from the first apply
+
+	return true
+}

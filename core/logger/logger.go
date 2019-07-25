@@ -12,9 +12,8 @@ import (
 
 type Logger = log.Filter
 
-var globalLogger log.Logger
-
 func NewLogger(id string, loglevel string, logchan string, logcomp string) (*Logger, error) {
+	var globalLogger log.Logger
 	var warn error = nil
 	if strings.HasPrefix(logcomp, "rabbitmq://") {
 		comp, err := components.NewComponent(logcomp)
@@ -44,10 +43,11 @@ func NewLogger(id string, loglevel string, logchan string, logcomp string) (*Log
 	} else if logcomp != "" {
 		warn = errors.New("illegal log comp type! only rabbitmq or file or empty(console logger) ... ")
 	}
-	globalLogger = log.Logger{
-		id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
-	}
-	return globalLogger[id], warn
+	//globalLogger = log.Logger{
+	//	id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
+	//}
+	//return globalLogger[id], warn
+	return log.Global["stdout"], warn
 }
 
 func getLogLevel(l string) log.Level {

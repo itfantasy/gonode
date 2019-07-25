@@ -21,6 +21,7 @@ type IDataCenter interface {
 	GetNodeInfo(string) (*gen_server.NodeInfo, error)
 	GetNodeSig(string) (string, error)
 	CheckNode(string, string) bool
+	ApplyDestruction(string) bool
 }
 
 func NewDataCenter(regcomp string) (IDataCenter, error) {

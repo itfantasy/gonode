@@ -57,7 +57,7 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 				}
 				for id, _ := range ids {
 					if id != e.info.Id {
-						e.callbacks.OnNewNode(id)
+						e.callbacks.OnNewNode(strings.TrimPrefix(id, channel+"/"))
 					}
 				}
 			}
@@ -116,4 +116,10 @@ func (e *EtcdDC) OnSubError(path string, err error) {
 	if strings.HasPrefix(path, e.channel) {
 		e.callbacks.OnDCError(err)
 	}
+}
+func (e *EtcdDC) ApplyDestruction(id string) bool {
+	// TODO: apply for destruction of one node (only supervisor)
+	// maybe we should consider the appling count or time from the first apply
+
+	return true
 }

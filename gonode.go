@@ -35,6 +35,8 @@ type GoNode struct {
 	eventer gen_event.GenEventer
 	monitor *sysmonitor.SysMonitor
 
+	super supervisor.Supervisor
+
 	netWorkers map[string]nets.INetWorker
 
 	event *EventHandler
@@ -56,6 +58,7 @@ func (g *GoNode) Bind(behavior interface{}) error {
 		if err != nil {
 			return errors.New("Bind Supervisor Failed!!" + err.Error())
 		}
+		g.super = super
 		g.behavior = superNode
 	default:
 		return errors.New("illegal behavior type!!")

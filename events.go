@@ -106,11 +106,22 @@ func (g *GoNode) onNewNode(id string) {
 			if err == nil {
 				err2 := g.Connnect(info.Id, info.Url)
 				if err2 != nil {
-					g.logger.Error(err2.Error() + "[" + id + "]")
+					g.onConnError(id, err2)
 				}
 			} else {
 				g.logger.Error(err.Error() + "[" + id + "]")
 			}
+		}
+	}
+}
+
+func (g *GoNode) onConnError(id string, err error) {
+	g.logger.Error(err.Error() + "[" + id + "]")
+	if g.info.Id == SUPERVISOR && g.super != nil {
+		g.super.OnConnFailed(id)
+		if g.dc.ApplyDestruction(id) {
+			g.logger.Info("the nodeinfo has been clean from the datacenter!" + id)
+			g.super.OnDestruct(id)
 		}
 	}
 }
