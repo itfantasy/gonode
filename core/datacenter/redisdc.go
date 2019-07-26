@@ -65,13 +65,28 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 				}
 				for _, id := range ids {
 					if id != r.info.Id {
-						r.callbacks.OnNewNode(id)
+						connErr := r.callbacks.OnNewNode(id)
+						if r.info.Id == "supervisor" {
+							if connErr != nil {
+								if checkOutOfDate(id) {
+									if _, err := r.coreRedis.Delete(r.channel + ":infos:" + id); err != nil {
+										r.callbacks.OnDCError(err)
+									} else if _, err := r.coreRedis.SRem(r.channel+":all", id); err != nil {
+										r.callbacks.OnDCError(err)
+									} else {
+										clearOutOfDate(id)
+										r.callbacks.OnNodeDestruct(id)
+									}
+								}
+							} else {
+								clearOutOfDate(id)
+							}
+						}
 					}
 				}
 			}
 		}()
 	}
-
 	return nil
 }
 func (r *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
@@ -129,10 +144,4 @@ func (r *RedisDC) OnSubError(channel string, err error) {
 	if r.channel == channel {
 		r.callbacks.OnDCError(err)
 	}
-}
-func (e *RedisDC) ApplyDestruction(id string) bool {
-	// TODO: apply for destruction of one node (only supervisor)
-	// maybe we should consider the appling count or time from the first apply
-
-	return true
 }

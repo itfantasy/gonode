@@ -15,8 +15,12 @@ type WSNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
-func (w *WSNetWorker) Listen(url string) error {
+func NewWSNetWorker() *WSNetWorker {
+	w := new(WSNetWorker)
+	return w
+}
 
+func (w *WSNetWorker) Listen(url string) error {
 	url = strings.Trim(url, "ws://") // trim the ws header
 	infos := strings.Split(url, "/") // parse the sub path
 	http.Handle("/"+infos[1], websocket.Handler(w.h_webSocket))

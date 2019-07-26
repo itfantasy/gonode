@@ -55,9 +55,24 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 					e.callbacks.OnDCError(err)
 					continue
 				}
-				for id, _ := range ids {
+				for idstr, _ := range ids {
+					id := strings.TrimPrefix(idstr, channel+"/")
 					if id != e.info.Id {
-						e.callbacks.OnNewNode(strings.TrimPrefix(id, channel+"/"))
+						connErr := e.callbacks.OnNewNode(id)
+						if e.info.Id == "supervisor" {
+							if connErr != nil {
+								if checkOutOfDate(id) {
+									if err := e.coreEtcd.Delete(idstr); err != nil {
+										e.callbacks.OnDCError(err)
+									} else {
+										clearOutOfDate(id)
+										e.callbacks.OnNodeDestruct(id)
+									}
+								}
+							} else {
+								clearOutOfDate(id)
+							}
+						}
 					}
 				}
 			}
@@ -116,10 +131,4 @@ func (e *EtcdDC) OnSubError(path string, err error) {
 	if strings.HasPrefix(path, e.channel) {
 		e.callbacks.OnDCError(err)
 	}
-}
-func (e *EtcdDC) ApplyDestruction(id string) bool {
-	// TODO: apply for destruction of one node (only supervisor)
-	// maybe we should consider the appling count or time from the first apply
-
-	return true
 }

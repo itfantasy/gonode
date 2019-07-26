@@ -15,10 +15,13 @@ type TcpNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
-func (t *TcpNetWorker) Listen(url string) error {
-
+func NewTcpNetWorker() *TcpNetWorker {
+	t := new(TcpNetWorker)
 	go nets.AutoPing(t)
+	return t
+}
 
+func (t *TcpNetWorker) Listen(url string) error {
 	url = strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
 	tcpAddr, err := net.ResolveTCPAddr("tcp", infos[0])
@@ -136,21 +139,22 @@ func (t *TcpNetWorker) h_tcpSocket(conn net.Conn) {
 }
 
 func (t *TcpNetWorker) Connect(id string, url string, origin string) error {
-
 	theUrl := strings.Trim(url, "tcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
-
 	tcpAddr, err := net.ResolveTCPAddr("tcp", infos[0])
 	if err != nil {
 		return err
 	}
-
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err == nil {
-		t.doHandShake(conn, origin, url, id)
-		go t.h_tcpSocket(conn)
+	if err != nil {
+		return err
 	}
-	return err
+	err2 := t.doHandShake(conn, origin, url, id)
+	if err2 != nil {
+		return err2
+	}
+	go t.h_tcpSocket(conn)
+	return nil
 }
 
 func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
@@ -228,8 +232,7 @@ func (t *TcpNetWorker) doHandShake(conn net.Conn, origin string, url string, id 
 	if err != nil {
 		return err
 	}
-	err2 := t.Send(conn, datas)
-	if err2 != nil {
+	if err2 := t.Send(conn, datas); err2 != nil {
 		return err2
 	}
 	t.onConn(conn, id)

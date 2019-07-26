@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -134,6 +135,16 @@ func (e *Etcd) Subscribe(path string) {
 			}
 		}
 	}
+}
+
+func (e *Etcd) Delete(path string) error {
+	if e.root != "" {
+		path = e.root + "/" + path
+	}
+	resp, err := e.cli.Delete(context.Background(), path)
+	fmt.Println(resp.Deleted)
+	fmt.Println(err)
+	return err
 }
 
 func (e *Etcd) BindSubscriber(subscriber common.ISubscriber) {

@@ -3,6 +3,7 @@ package kcp
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 
@@ -15,10 +16,13 @@ type KcpNetWorker struct {
 	eventListener nets.INetEventListener
 }
 
-func (k *KcpNetWorker) Listen(url string) error {
-
+func NewKcpNetWorker() *KcpNetWorker {
+	k := new(KcpNetWorker)
 	go nets.AutoPing(k)
+	return k
+}
 
+func (k *KcpNetWorker) Listen(url string) error {
 	url = strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(url, "/")  // parse the sub path
 	listener, err := kcp.Listen(infos[0])
@@ -70,13 +74,16 @@ func (k *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 func (k *KcpNetWorker) Connect(id string, url string, origin string) error {
 	theUrl := strings.Trim(url, "kcp://") // trim the ws header
 	infos := strings.Split(theUrl, "/")   // parse the sub path
-
 	conn, err := kcp.Dial(infos[0])
-	if err == nil {
-		k.doHandShake(conn, origin, id)
-		go k.h_kcpSocket(conn)
+	if err != nil {
+		return err
 	}
-	return err
+	err2 := k.doHandShake(conn, origin, id)
+	if err2 != nil {
+		return err2
+	}
+	go k.h_kcpSocket(conn)
+	return nil
 }
 
 func (k *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
@@ -147,8 +154,10 @@ func (k *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) erro
 	if err != nil {
 		return err
 	}
-	_, err2 := conn.Write(datas)
-	if err2 != nil {
+	if err := nets.SetHandShakeConnDeadline(id); err != nil {
+		return err
+	}
+	if _, err2 := conn.Write(datas); err2 != nil {
 		return err2
 	}
 	k.onConn(conn, id)
@@ -166,6 +175,11 @@ func (k *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	}
 	id, b := k.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
+		fmt.Println("return hsuc...")
+		if _, err2 := conn.Write([]byte("#hsuc")); err2 != nil {
+			return err2
+		}
+		fmt.Println("return hsuc!!")
 		k.onConn(conn, id)
 		return nil
 	} else {

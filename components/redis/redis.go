@@ -184,6 +184,13 @@ func (r *Redis) SMembers(key string) ([]string, error) {
 	return strs, err
 }
 
+func (r *Redis) SRem(key string, member string) (int64, error) {
+	rc := r.RedisClient.Get()
+	num, err := redis.Int64(rc.Do("SREM", key))
+	rc.Close()
+	return num, err
+}
+
 // -------------zset----------------
 // for the ranking, and only for setting; and the large datas for getting, maybe you can use php :P
 

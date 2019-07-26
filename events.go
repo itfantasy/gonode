@@ -38,12 +38,16 @@ func (e *EventHandler) OnCheckNode(origin string) (string, bool) {
 	return e.node.onCheckNode(origin)
 }
 
-func (e *EventHandler) OnNewNode(id string) {
-	e.node.onNewNode(id)
+func (e *EventHandler) OnNewNode(id string) error {
+	return e.node.onNewNode(id)
 }
 
 func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
+}
+
+func (e *EventHandler) OnNodeDestruct(id string) {
+	e.node.onNodeDestruct(id)
 }
 
 func (e *EventHandler) OnDigestError(err interface{}) {
@@ -92,7 +96,7 @@ func (g *GoNode) onCheckNode(origin string) (string, bool) {
 }
 
 // when a new node is found
-func (g *GoNode) onNewNode(id string) {
+func (g *GoNode) onNewNode(id string) error {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
@@ -104,30 +108,29 @@ func (g *GoNode) onNewNode(id string) {
 			// find the node url by the id
 			info, err := g.dc.GetNodeInfo(id)
 			if err == nil {
-				err2 := g.Connnect(info.Id, info.Url)
-				if err2 != nil {
-					g.onConnError(id, err2)
+				if connErr := g.Connnect(info.Id, info.Url); connErr != nil {
+					g.logger.Error(connErr.Error() + "[" + id + "]")
+					if g.info.Id == SUPERVISOR && g.super != nil {
+						g.super.OnConnFailed(id)
+					}
+					return connErr
 				}
 			} else {
 				g.logger.Error(err.Error() + "[" + id + "]")
 			}
 		}
 	}
-}
-
-func (g *GoNode) onConnError(id string, err error) {
-	g.logger.Error(err.Error() + "[" + id + "]")
-	if g.info.Id == SUPERVISOR && g.super != nil {
-		g.super.OnConnFailed(id)
-		if g.dc.ApplyDestruction(id) {
-			g.logger.Info("the nodeinfo has been clean from the datacenter!" + id)
-			g.super.OnDestruct(id)
-		}
-	}
+	return nil
 }
 
 func (g *GoNode) onDCError(err error) {
 	g.logger.Error(err.Error())
+}
+
+func (g *GoNode) onNodeDestruct(id string) {
+	if g.info.Id == SUPERVISOR && g.super != nil {
+		g.super.OnDestruct(id)
+	}
 }
 
 func (g *GoNode) onDispose() {

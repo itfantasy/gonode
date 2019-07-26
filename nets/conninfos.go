@@ -31,13 +31,13 @@ func newConnItemInfo(id string, proto string, conn net.Conn, netWorker INetWorke
 
 var connInfos *ConnInfos
 
-func InitKvvk() {
-	if connInfos == nil {
-		connInfos = new(ConnInfos)
-		connInfos.kv = make(map[string]*connItemInfo)
-		connInfos.vk = make(map[net.Conn]string)
-	}
-	initStates()
+func init() {
+	connInfos = new(ConnInfos)
+	connInfos.kv = make(map[string]*connItemInfo)
+	connInfos.vk = make(map[net.Conn]string)
+
+	connStates = make(map[string]*ConnState)
+	deadLines = make(map[string]*HandShakeConnDeadline)
 }
 
 func AddConnInfo(id string, proto string, conn net.Conn, netWorker INetWorker) error {

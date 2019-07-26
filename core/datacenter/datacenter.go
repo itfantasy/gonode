@@ -11,8 +11,9 @@ import (
 )
 
 type IDCCallbacks interface {
-	OnNewNode(id string)
+	OnNewNode(id string) error
 	OnDCError(err error)
+	OnNodeDestruct(id string)
 }
 
 type IDataCenter interface {
@@ -21,7 +22,6 @@ type IDataCenter interface {
 	GetNodeInfo(string) (*gen_server.NodeInfo, error)
 	GetNodeSig(string) (string, error)
 	CheckNode(string, string) bool
-	ApplyDestruction(string) bool
 }
 
 func NewDataCenter(regcomp string) (IDataCenter, error) {

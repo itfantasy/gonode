@@ -1,6 +1,7 @@
 package nets
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -23,12 +24,14 @@ type ConnState struct {
 	ts   int64 // the ts of the last recivingmsg
 }
 
-var connStates map[string]*ConnState
-var stateLock sync.RWMutex
-
-func initStates() {
-	connStates = make(map[string]*ConnState)
+type HandShakeConnDeadline struct {
+	handShake chan bool
+	timeOut   chan bool
 }
+
+var connStates map[string]*ConnState
+var deadLines map[string]*HandShakeConnDeadline
+var stateLock sync.RWMutex
 
 func AutoPing(netWorker INetWorker) {
 	dirtyStates := make([]*ConnState, 0, 100)
@@ -41,7 +44,7 @@ func AutoPing(netWorker INetWorker) {
 				dirtyStates = append(dirtyStates, state)
 				fmt.Println("conn time out.." + id)
 			} else if ms-state.ts > 2000 {
-				fmt.Println("sending a ping to..." + id)
+				//fmt.Println("sending a ping to..." + id)
 				go netWorker.Send(state.conn, []byte("#ping"))
 				state.ping = true
 			}
@@ -86,14 +89,47 @@ func ResetConnState(id string, netWorker INetWorker, msg []byte) bool {
 		if msg[0] == 35 { // '#'
 			strmsg := string(msg)
 			if strmsg == "#pong" {
-				fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
+				//fmt.Println("receive pong from.." + id) // nothing to do but ResetConnState for AutoPing
 				return true
 			} else if strmsg == "#ping" {
-				fmt.Println("re sending pong to..." + id)
+				//fmt.Println("re sending pong to..." + id)
 				go netWorker.Send(state.conn, []byte("#pong")) // return the pong pck
+				return true
+			} else if strmsg == "#hsuc" {
+				dl, exist := deadLines[id]
+				if exist {
+					dl.handShake <- true
+				}
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func SetHandShakeConnDeadline(id string) error {
+	stateLock.Lock()
+	defer stateLock.Unlock()
+
+	_, exist := deadLines[id]
+	if !exist {
+		deadLines[id] = new(HandShakeConnDeadline)
+		deadLines[id].handShake = make(chan bool, 1)
+		deadLines[id].timeOut = make(chan bool, 1)
+	}
+
+	dl, _ := deadLines[id]
+
+	go func() {
+		timer.Sleep(3000)
+		dl.timeOut <- true
+	}()
+	select {
+	case <-dl.handShake:
+		return nil
+	case <-dl.timeOut:
+		return errors.New("HandleShake TimeOut!" + id)
+	}
+
+	return nil
 }

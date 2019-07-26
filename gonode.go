@@ -71,7 +71,6 @@ func (g *GoNode) Launch() {
 
 	// mandatory multicore CPU enabled
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	nets.InitKvvk()
 
 	// get the node self info config
 	if g.behavior == nil {
@@ -182,24 +181,18 @@ func (g *GoNode) netWorker(url string) nets.INetWorker {
 	if g.netWorkers == nil {
 		g.netWorkers = make(map[string]nets.INetWorker)
 	}
-	infos := strings.Split(url, "://") // get the header of protocol
-	proto := infos[0]
 	_, exists := g.netWorkers[url]
 	if !exists {
+		proto := strings.Split(url, "://")[0] // get the header of protocol
 		switch proto {
 		case (string)(nets.WS):
-			g.netWorkers[url] = new(ws.WSNetWorker)
-			break
+			g.netWorkers[url] = ws.NewWSNetWorker()
 		case (string)(nets.KCP):
-			g.netWorkers[url] = new(kcp.KcpNetWorker)
-			break
+			g.netWorkers[url] = kcp.NewKcpNetWorker()
 		case (string)(nets.TCP):
-			g.netWorkers[url] = new(tcp.TcpNetWorker)
-			break
+			g.netWorkers[url] = tcp.NewTcpNetWorker()
 		}
 		g.netWorkers[url].BindEventListener(g.event)
-	} else {
-		g.logger.Warn("the url has been listening!" + url)
 	}
 	return g.netWorkers[url]
 }
