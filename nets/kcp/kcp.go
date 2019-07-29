@@ -3,9 +3,9 @@ package kcp
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/itfantasy/gonode/nets"
 	"github.com/json-iterator/go"
@@ -60,7 +60,7 @@ func (k *KcpNetWorker) h_kcpSocket(conn net.Conn) {
 			if exists {
 				k.onMsg(conn, id, datas.Bytes())
 			} else {
-				if err := k.dealHandShake(conn, string(datas.Bytes())); err != nil {
+				if err := k.dealHandShake(conn, datas.Bytes()); err != nil {
 					k.onError(conn, err)
 				}
 			}
@@ -154,19 +154,37 @@ func (k *KcpNetWorker) doHandShake(conn net.Conn, origin string, id string) erro
 	if err != nil {
 		return err
 	}
-	if err := nets.SetHandShakeConnDeadline(id); err != nil {
-		return err
-	}
 	if _, err2 := conn.Write(datas); err2 != nil {
 		return err2
 	}
-	k.onConn(conn, id)
-	return nil
+
+	buf := make([]byte, 5, 5) // the rev buf
+	if err := conn.SetReadDeadline(time.Now().Add(time.Second * 6)); err != nil {
+		return err
+	}
+	n, err := conn.Read(buf[0:])
+	if err != nil {
+		return err
+	}
+	if err := conn.SetReadDeadline(time.Time{}); err != nil {
+		return err
+	}
+	if n < 0 {
+		return errors.New("handshake time out !!")
+	}
+	if buf[0] == 35 { // '#'
+		strmsg := string(buf)
+		if strmsg == "#hsuc" {
+			k.onConn(conn, id)
+			return nil
+		}
+	}
+	return errors.New("handshake recv illegal!!")
 }
 
-func (k *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
+func (k *KcpNetWorker) dealHandShake(conn net.Conn, msg []byte) error {
 	var datas map[string]string
-	if err := jsoniter.Unmarshal([]byte(context), &datas); err != nil {
+	if err := jsoniter.Unmarshal(msg, &datas); err != nil {
 		return err
 	}
 	origin, exists := datas["Origin"]
@@ -175,14 +193,13 @@ func (k *KcpNetWorker) dealHandShake(conn net.Conn, context string) error {
 	}
 	id, b := k.eventListener.OnCheckNode(origin) // let the gonode to check if the url is legal
 	if b {
-		fmt.Println("return hsuc...")
 		if _, err2 := conn.Write([]byte("#hsuc")); err2 != nil {
 			return err2
 		}
-		fmt.Println("return hsuc!!")
 		k.onConn(conn, id)
 		return nil
 	} else {
 		return errors.New("handshake illegal!!")
 	}
+	return nil
 }

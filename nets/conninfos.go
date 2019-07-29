@@ -37,7 +37,6 @@ func init() {
 	connInfos.vk = make(map[net.Conn]string)
 
 	connStates = make(map[string]*ConnState)
-	deadLines = make(map[string]*HandShakeConnDeadline)
 }
 
 func AddConnInfo(id string, proto string, conn net.Conn, netWorker INetWorker) error {

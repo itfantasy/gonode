@@ -62,7 +62,7 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 						if e.info.Id == "supervisor" {
 							if connErr != nil {
 								if checkOutOfDate(id) {
-									if err := e.coreEtcd.Delete(idstr); err != nil {
+									if _, err := e.coreEtcd.Delete(idstr); err != nil {
 										e.callbacks.OnDCError(err)
 									} else {
 										clearOutOfDate(id)
