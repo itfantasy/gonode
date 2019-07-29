@@ -24,165 +24,176 @@ func BuildBuffer(capacity int) *BinBuffer {
 	return buffer
 }
 
-func (b *BinBuffer) PushByte(value byte) {
+func (b *BinBuffer) PushByte(value byte) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushByte(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushBool(value bool) {
+func (b *BinBuffer) PushBool(value bool) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushBool(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushBytes(value []byte) {
+func (b *BinBuffer) PushBytes(value []byte) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushBytes(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushShort(value int16) {
+func (b *BinBuffer) PushShort(value int16) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushShort(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushInt(value int32) {
+func (b *BinBuffer) PushInt(value int32) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushInt(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushLong(value int64) {
+func (b *BinBuffer) PushLong(value int64) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushLong(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushString(value string) {
+func (b *BinBuffer) PushString(value string) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	buffer := ([]byte)(value)
 	b.PushInt(int32(len(buffer))) // write the len of the string
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, buffer)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushString(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushFloat(value float32) {
+func (b *BinBuffer) PushFloat(value float32) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	err := binary.Write(b.bytesBuffer, binary.LittleEndian, value)
 	if err != nil {
 		b.err = err
 		b.errInfo = fmt.Sprintf("PushFloat(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) PushInts(value []int32) {
+func (b *BinBuffer) PushInts(value []int32) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the []int
 	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushInts(%v)", value)
-		return
+		return b
 	}
 	for _, v := range value {
 		b.PushInt(v)
 		if b.err != nil {
 			b.errInfo = fmt.Sprintf("PushInts(%v)", value)
-			return
+			return b
 		}
 	}
+	return b
 }
 
-func (b *BinBuffer) PushArray(value []interface{}) {
+func (b *BinBuffer) PushArray(value []interface{}) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the []int
 	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushArray(%v)", value)
-		return
+		return b
 	}
 	for _, v := range value {
 		b.PushObject(v)
 		if b.err != nil {
 			b.errInfo = fmt.Sprintf("PushArray(%v)", value)
-			return
+			return b
 		}
 	}
+	return b
 }
 
-func (b *BinBuffer) PushHash(value map[interface{}]interface{}) {
+func (b *BinBuffer) PushHash(value map[interface{}]interface{}) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	length := len(value)
 	b.PushInt(int32(length)) // write the len of the hash
 	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushHash(%v)", value)
-		return
+		return b
 	}
 	for k, v := range value {
 		b.PushObject(k)
 		b.PushObject(v)
 		if b.err != nil {
 			b.errInfo = fmt.Sprintf("PushHash(%v)", value)
-			return
+			return b
 		}
 	}
+	return b
 }
 
-func (b *BinBuffer) PushObject(value interface{}) {
+func (b *BinBuffer) PushObject(value interface{}) *BinBuffer {
 	if b.err != nil {
-		return
+		return b
 	}
 	if value == nil {
 		b.PushByte(types.Null)
 		b.PushByte(byte(0))
-		return
+		return b
 	}
 	switch value.(type) {
 	case byte:
@@ -224,18 +235,18 @@ func (b *BinBuffer) PushObject(value interface{}) {
 	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushObject(%v)", value)
 	}
+	return b
 }
 
-func (b *BinBuffer) Bytes() []byte {
-	return b.bytesBuffer.Bytes() // has been a slic
+func (b *BinBuffer) Bytes() ([]byte, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
+	return b.bytesBuffer.Bytes(), nil // has been a slic
 }
 
 func (b *BinBuffer) Dispose() {
 	b.buffer = nil
-}
-
-func (b *BinBuffer) Error() error {
-	return b.err
 }
 
 func (b *BinBuffer) ErrorInfo() string {

@@ -165,11 +165,12 @@ func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 		buf.Dispose()
 		buf = nil
 	}()
-	buf.PushInt(PCK_HEADER)
-	buf.PushShort(int16(datalen))
-	buf.PushBytes(msg)
-	_, err := conn.Write(buf.Bytes())
-	return err
+	bytes, err := buf.PushInt(PCK_HEADER).PushShort(int16(datalen)).PushBytes(msg).Bytes()
+	if err != nil {
+		return err
+	}
+	_, err2 := conn.Write(bytes)
+	return err2
 }
 
 func (t *TcpNetWorker) onConn(conn net.Conn, id string) {
