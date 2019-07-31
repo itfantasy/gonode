@@ -62,7 +62,7 @@ func (s *SuperNode) Setup() *gen_server.NodeInfo {
 	info := gen_server.NewNodeInfo()
 	info.Id = s.id
 	info.Url = s.info.Url
-	info.Pub = false
+	info.Pub = true
 	info.BackEnds = s.backEnds
 	info.LogLevel = "INFO"
 	info.LogComp = ""
@@ -78,7 +78,7 @@ func (s *SuperNode) OnConn(id string) {
 	s.super.OnConn(id)
 }
 func (s *SuperNode) OnMsg(id string, msg []byte) {
-	// nothing to do ...
+	s.super.OnMsg(id, msg)
 }
 func (s *SuperNode) OnClose(id string, reason error) {
 	s.super.OnClose(id, reason)

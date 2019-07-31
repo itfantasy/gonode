@@ -224,6 +224,14 @@ func (g *GoNode) Send(id string, msg []byte) error {
 	return netWorker.Send(conn, msg)
 }
 
+func (g *GoNode) Close(id string) error {
+	conn, _, netWorker, exist := nets.GetInfoConnById(id)
+	if !exist {
+		return errors.New("there is not the id in local record!")
+	}
+	return netWorker.Close(id, conn)
+}
+
 func (g *GoNode) GetAllConnIds() []string {
 	return nets.GetAllConnIds()
 }

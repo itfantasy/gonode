@@ -37,6 +37,10 @@ func Send(id string, msg []byte) {
 	node.Send(id, msg)
 }
 
+func Close(id string) error {
+	return node.Close(id)
+}
+
 func AllConnIds() []string {
 	return node.GetAllConnIds()
 }
