@@ -21,8 +21,6 @@ import (
 	"github.com/itfantasy/gonode/nets/kcp"
 	"github.com/itfantasy/gonode/nets/tcp"
 	"github.com/itfantasy/gonode/nets/ws"
-
-	"github.com/itfantasy/gonode/utils/snowflake"
 )
 
 type GoNode struct {
@@ -32,7 +30,7 @@ type GoNode struct {
 	logger *logger.Logger
 	dc     datacenter.IDataCenter
 
-	eventer gen_event.GenEventer
+	even    gen_event.GenEvent
 	monitor *sysmonitor.SysMonitor
 
 	super supervisor.Supervisor
@@ -49,8 +47,8 @@ func (g *GoNode) Bind(behavior interface{}) error {
 	switch behavior.(type) {
 	case gen_server.GenServer:
 		g.behavior = behavior.(gen_server.GenServer)
-	case gen_event.GenEventer:
-		g.eventer = behavior.(gen_event.GenEventer)
+	case gen_event.GenEvent:
+		g.even = behavior.(gen_event.GenEvent)
 	case supervisor.Supervisor:
 		super := behavior.(supervisor.Supervisor)
 		superNode := supervisor.NewSuperNode()
@@ -108,10 +106,10 @@ func (g *GoNode) Launch() {
 	}
 
 	// init the monitor
-	if g.eventer != nil {
-		monitor, err := sysmonitor.NewSysMonitor(g.info.Id, g.eventer, CHAN_MONI)
+	if g.even != nil {
+		monitor, err := sysmonitor.NewSysMonitor(g.info.Id, g.even, CHAN_MONI)
 		if err != nil {
-			fmt.Println("Initialize Faild!! You have binded a eventer behavior, but the eventconf is incorrect!!" + err.Error())
+			fmt.Println("Initialize Faild!! You have binded a event behavior, but the eventconf is incorrect!!" + err.Error())
 			return
 		}
 		g.monitor = monitor
@@ -232,20 +230,12 @@ func (g *GoNode) Close(id string) error {
 	return netWorker.Close(id, conn)
 }
 
-func (g *GoNode) GetAllConnIds() []string {
-	return nets.GetAllConnIds()
-}
-
-func (g *GoNode) randomCntId() string {
-	return "cnt-" + snowflake.Generate()
-}
-
 func (g *GoNode) checkTargetId(id string) bool {
 	if g.info.BackEnds == ALLNODES && id != g.info.Id {
 		return true
 	}
 
-	label := strings.Split(id, "-")[0]
+	label := nets.Label(id)
 	backEnds := strings.Split(g.info.BackEnds, ",")
 	for _, item := range backEnds {
 		if item == label {
@@ -261,8 +251,8 @@ func (g *GoNode) reportError(err interface{}) {
 	title := "!!! Auto Recovering..."
 	content := fmt.Sprint(err) +
 		"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
-	if g.eventer != nil {
-		g.eventer.OnReportError(title, content)
+	if g.even != nil {
+		g.even.OnReportError(g.info.Id, title, content)
 	}
 	g.logger.Error(title + content)
 }

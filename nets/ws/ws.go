@@ -121,7 +121,7 @@ func (w *WSNetWorker) BindEventListener(eventListener nets.INetEventListener) er
 }
 
 func (w *WSNetWorker) Close(id string, conn net.Conn) error {
-	w.eventListener.OnClose(id, nil)
+	w.eventListener.OnClose(id, errors.New("EOF"))
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

@@ -221,7 +221,7 @@ func (t *TcpNetWorker) BindEventListener(eventListener nets.INetEventListener) e
 }
 
 func (t *TcpNetWorker) Close(id string, conn net.Conn) error {
-	t.eventListener.OnClose(id, nil)
+	t.eventListener.OnClose(id, errors.New("EOF"))
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

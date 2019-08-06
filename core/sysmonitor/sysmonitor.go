@@ -10,13 +10,15 @@ import (
 )
 
 type SysMonitor struct {
-	even    gen_event.GenEventer
+	id      string
+	even    gen_event.GenEvent
 	conf    *gen_event.EventConf
 	monitor *logger.Logger
 }
 
-func NewSysMonitor(id string, even gen_event.GenEventer, monichan string) (*SysMonitor, error) {
+func NewSysMonitor(id string, even gen_event.GenEvent, monichan string) (*SysMonitor, error) {
 	s := new(SysMonitor)
+	s.id = id
 	s.even = even
 	s.conf = s.even.Setup()
 	if s.conf.MoniComp != "" {
@@ -35,10 +37,10 @@ func (s *SysMonitor) StartMonitoring() {
 			cpu := int(os.CurCpuPercent())
 			mem := int(os.CurMemoryUsage())
 			if cpu >= s.conf.CpuLimit {
-				s.even.OnCpuOverload(cpu)
+				s.even.OnCpuOverload(s.id, cpu)
 			}
 			if mem >= s.conf.MemLimit {
-				s.even.OnMemoryOverload(mem)
+				s.even.OnMemoryOverload(s.id, mem)
 			}
 			if s.monitor != nil {
 				s.monitor.Info("{\"cpu\":" + strconv.Itoa(cpu) + ",\"mem\":" + strconv.Itoa(mem) + "}")

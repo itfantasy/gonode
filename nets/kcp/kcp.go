@@ -142,7 +142,7 @@ func (k *KcpNetWorker) BindEventListener(eventListener nets.INetEventListener) e
 }
 
 func (k *KcpNetWorker) Close(id string, conn net.Conn) error {
-	k.eventListener.OnClose(id, nil)
+	k.eventListener.OnClose(id, errors.New("EOF"))
 	nets.RemoveConnInfo(id) // remove the closed conn from local record
 	return conn.Close()
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components/etcd"
+	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
@@ -64,6 +65,8 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 								if checkOutOfDate(id) {
 									if _, err := e.coreEtcd.Delete(idstr); err != nil {
 										e.callbacks.OnDCError(err)
+									} else if _, err := e.coreEtcd.Delete(channel + "-Status/" + id); err != nil {
+										e.callbacks.OnDCError(err)
 									} else {
 										clearOutOfDate(id)
 										e.callbacks.OnNodeDestruct(id)
@@ -74,6 +77,9 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 							}
 						}
 					}
+				}
+				if e.info.Id != "supervisor" {
+					e.updateNodeStatus(nets.AllSvcConnIds())
 				}
 			}
 		}()
@@ -116,7 +122,29 @@ func (e *EtcdDC) CheckNode(id string, sig string) bool {
 	}
 	return true
 }
-
+func (e *EtcdDC) updateNodeStatus(conns []string) error {
+	status, err := json.Encode(conns)
+	if err != nil {
+		return err
+	}
+	err2 := e.coreEtcd.Set(e.channel+"-Status/"+e.info.Id, status)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+func (e *EtcdDC) GetNodeStatus(id string) ([]string, error) {
+	status, err := e.coreEtcd.Get(e.channel + "-Status/" + id)
+	if err != nil {
+		return nil, err
+	}
+	conns := make([]string, 0, 0)
+	err2 := json.Decode(status, conns)
+	if err2 != nil {
+		return nil, err2
+	}
+	return conns, nil
+}
 func (e *EtcdDC) OnSubscribe(path string) {
 	if e.channel == path {
 

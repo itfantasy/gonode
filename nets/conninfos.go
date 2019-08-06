@@ -2,9 +2,11 @@ package nets
 
 import (
 	"errors"
+	"net"
+	"strings"
 	"sync"
 
-	"net"
+	"github.com/itfantasy/gonode/utils/snowflake"
 )
 
 type ConnInfos struct {
@@ -93,16 +95,41 @@ func GetInfoConnById(id string) (net.Conn, string, INetWorker, bool) {
 	}
 }
 
-func GetAllConnIds() []string {
+func AllConnIds() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
-	sorted_keys := make([]string, 0, len(connInfos.kv)) // set the capacity
+	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
 	for k, _ := range connInfos.kv {
-		sorted_keys = append(sorted_keys, k) // and this append will not create extra memory costing
+		keys = append(keys, k) // and this append will not create extra memory costing
 	}
-	//sort.Strings(sorted_keys)
-	return sorted_keys
+	return keys
+}
+
+func AllSvcConnIds() []string {
+	connInfos.LOCK.Lock()
+	defer connInfos.LOCK.Unlock()
+
+	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
+	for k, _ := range connInfos.kv {
+		if !IsCntConnId(k) {
+			keys = append(keys, k) // and this append will not create extra memory costing
+		}
+	}
+	return keys
+}
+
+func AllCntConnIds() []string {
+	connInfos.LOCK.Lock()
+	defer connInfos.LOCK.Unlock()
+
+	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
+	for k, _ := range connInfos.kv {
+		if IsCntConnId(k) {
+			keys = append(keys, k) // and this append will not create extra memory costing
+		}
+	}
+	return keys
 }
 
 func IsIdExists(id string) bool {
@@ -111,4 +138,16 @@ func IsIdExists(id string) bool {
 
 	_, exist := connInfos.kv[id]
 	return exist
+}
+
+func RanCntConnId() string {
+	return "cnt-" + snowflake.Generate()
+}
+
+func Label(id string) string {
+	return strings.Split(id, "-")[0]
+}
+
+func IsCntConnId(id string) bool {
+	return Label(id) == "cnt"
 }

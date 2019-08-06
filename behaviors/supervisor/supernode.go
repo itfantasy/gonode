@@ -88,7 +88,14 @@ func (s *SuperNode) OnSubscribe(channel string) {
 	fmt.Println("SuperNode.OnSubscribe::" + channel)
 }
 func (s *SuperNode) OnSubMessage(channel string, msg string) {
-	fmt.Println("SuperNode.OnSubMessage::" + channel + ":" + msg)
+	switch channel {
+	case s.logChan:
+		s.super.OnLog(msg)
+	case s.moniChan:
+		s.super.OnMonitor(msg)
+	default:
+		fmt.Println("SuperNode.OnSubMessage::" + channel + ":" + msg)
+	}
 }
 func (s *SuperNode) OnSubError(channel string, err error) {
 	fmt.Println("SuperNode.OnSubError::" + channel + ":" + err.Error())

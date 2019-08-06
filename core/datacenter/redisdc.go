@@ -5,6 +5,7 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components/redis"
+	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
@@ -71,6 +72,8 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 								if checkOutOfDate(id) {
 									if _, err := r.coreRedis.Delete(r.channel + ":infos:" + id); err != nil {
 										r.callbacks.OnDCError(err)
+									} else if _, err := r.coreRedis.Delete(r.channel + ":status:" + id); err != nil {
+										r.callbacks.OnDCError(err)
 									} else if _, err := r.coreRedis.SRem(r.channel+":all", id); err != nil {
 										r.callbacks.OnDCError(err)
 									} else {
@@ -83,6 +86,9 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 							}
 						}
 					}
+				}
+				if r.info.Id == "supervisor" {
+					r.updateNodeStatus(nets.AllSvcConnIds())
 				}
 			}
 		}()
@@ -124,7 +130,29 @@ func (r *RedisDC) CheckNode(id string, sig string) bool {
 	}
 	return true
 }
-
+func (r *RedisDC) updateNodeStatus(conns []string) error {
+	status, err := json.Encode(conns)
+	if err != nil {
+		return err
+	}
+	_, err2 := r.coreRedis.Set(r.channel+":status:"+r.info.Id, status)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+func (r *RedisDC) GetNodeStatus(id string) ([]string, error) {
+	status, err := r.coreRedis.Get(r.channel + ":status:" + id)
+	if err != nil {
+		return nil, err
+	}
+	conns := make([]string, 0, 0)
+	err2 := json.Decode(status, conns)
+	if err2 != nil {
+		return nil, err2
+	}
+	return conns, nil
+}
 func (r *RedisDC) OnSubscribe(channel string) {
 	if r.channel == channel {
 

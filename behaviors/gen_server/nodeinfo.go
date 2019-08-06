@@ -35,6 +35,6 @@ func (info *NodeInfo) Signature() {
 }
 
 func (info *NodeInfo) ToString() string {
-	str := "NodeInfo:\r\nId:" + info.Id + "\r\nUrl:" + info.Url + "\r\nPub:" + fmt.Sprint(info.Pub) + "\r\nBackEnds:" + info.BackEnds
+	str := "NodeInfo:\r\nId:" + info.Id + "\r\nUrl:" + info.Url + "\r\nPub:" + fmt.Sprint(info.Pub) + "\r\nBackEnds:" + info.BackEnds + "\r\n"
 	return str
 }

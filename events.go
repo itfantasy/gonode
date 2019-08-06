@@ -82,7 +82,7 @@ func (g *GoNode) onCheckNode(origin string) (string, bool) {
 			g.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
-			connId := g.randomCntId()
+			connId := nets.RanCntConnId()
 			return connId, true
 		}
 	} else {

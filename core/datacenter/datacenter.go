@@ -22,6 +22,7 @@ type IDataCenter interface {
 	GetNodeInfo(string) (*gen_server.NodeInfo, error)
 	GetNodeSig(string) (string, error)
 	CheckNode(string, string) bool
+	GetNodeStatus(string) ([]string, error)
 }
 
 func NewDataCenter(regcomp string) (IDataCenter, error) {

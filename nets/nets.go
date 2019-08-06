@@ -74,3 +74,7 @@ func ParserOriginInfo(origin string) (string, string, string, error) {
 	sig := idAndSig[1]
 	return id, url, sig, nil
 }
+
+func EOF(err error) bool {
+	return err.Error() == "EOF"
+}

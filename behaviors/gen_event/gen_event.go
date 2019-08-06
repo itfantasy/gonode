@@ -1,8 +1,8 @@
 package gen_event
 
-type GenEventer interface {
+type GenEvent interface {
 	Setup() *EventConf
-	OnReportError(string, string)
-	OnCpuOverload(int)
-	OnMemoryOverload(int)
+	OnReportError(string, string, string)
+	OnCpuOverload(string, int)
+	OnMemoryOverload(string, int)
 }

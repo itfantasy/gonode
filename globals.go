@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/json"
 )
 
@@ -42,7 +43,23 @@ func Close(id string) error {
 }
 
 func AllConnIds() []string {
-	return node.GetAllConnIds()
+	return nets.AllConnIds()
+}
+
+func Label(id string) string {
+	return nets.Label(id)
+}
+
+func IsCntConn(id string) bool {
+	return nets.IsCntConnId(id)
+}
+
+func AllSvcConnIds() []string {
+	return nets.AllSvcConnIds()
+}
+
+func AllCntConnIds() []string {
+	return nets.AllCntConnIds()
 }
 
 func Log(obj interface{}) {
