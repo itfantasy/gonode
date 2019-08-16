@@ -2,16 +2,22 @@ package mysql
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/itfantasy/gonode/components/common"
 )
 
+const (
+	OPT_MAXASYNC string = "OPT_MAXASYNC"
+)
+
 type MySql struct {
-	user string
-	pass string
-	db   *sql.DB
-	opts *common.CompOptions
+	user    string
+	pass    string
+	db      *sql.DB
+	opts    *common.CompOptions
+	sqlchan chan string
 }
 
 func NewMySql() *MySql {
@@ -19,6 +25,7 @@ func NewMySql() *MySql {
 	m.user = "root"
 	m.pass = ""
 	m.opts = common.NewCompOptions()
+	m.opts.Set(OPT_MAXASYNC, 0)
 	return m
 }
 
@@ -32,6 +39,21 @@ func (m *MySql) Conn(url string, dbname string) error {
 		return err
 	}
 	m.db = db
+	maxasync := m.opts.GetInt(OPT_MAXASYNC)
+	if maxasync > 0 {
+		m.sqlchan = make(chan string, maxasync)
+		go func() {
+			for sqlstr := range m.sqlchan {
+				if sqlstr == "EOF" {
+					break
+				}
+				_, err := m.db.Exec(sqlstr)
+				if err != nil {
+					fmt.Println("[MySql]::Sql Async Exec faild!!" + sqlstr)
+				}
+			}
+		}()
+	}
 	return nil
 }
 
@@ -46,6 +68,7 @@ func (m *MySql) SetOption(key string, val interface{}) {
 
 func (m *MySql) Close() {
 	if m.db != nil {
+		m.sqlchan <- "EOF"
 		m.db.Close()
 		m.db = nil
 	}
@@ -57,6 +80,6 @@ func (m *MySql) RawDB() *sql.DB {
 
 func (m *MySql) Table(tab string) *SqlBuilder {
 	bd := SqlBuilder{}
-	bd.doTable(m.db, tab)
+	bd.doTable(m.db, m.sqlchan, tab)
 	return &bd
 }

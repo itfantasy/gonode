@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/itfantasy/gonode/behaviors/gen_event"
+	"github.com/itfantasy/gonode/behaviors/gen_monitor"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/behaviors/supervisor"
 
@@ -30,8 +30,8 @@ type GoNode struct {
 	logger *logger.Logger
 	dc     datacenter.IDataCenter
 
-	even    gen_event.GenEvent
-	monitor *sysmonitor.SysMonitor
+	monitor    gen_monitor.GenMonitor
+	monitoring *sysmonitor.SysMonitoring
 
 	super supervisor.Supervisor
 
@@ -47,8 +47,8 @@ func (g *GoNode) Bind(behavior interface{}) error {
 	switch behavior.(type) {
 	case gen_server.GenServer:
 		g.behavior = behavior.(gen_server.GenServer)
-	case gen_event.GenEvent:
-		g.even = behavior.(gen_event.GenEvent)
+	case gen_monitor.GenMonitor:
+		g.monitor = behavior.(gen_monitor.GenMonitor)
 	case supervisor.Supervisor:
 		super := behavior.(supervisor.Supervisor)
 		superNode := supervisor.NewSuperNode()
@@ -106,14 +106,19 @@ func (g *GoNode) Launch() {
 	}
 
 	// init the monitor
-	if g.even != nil {
-		monitor, err := sysmonitor.NewSysMonitor(g.info.Id, g.even, CHAN_MONI)
+	if g.monitor != nil {
+		monitoring, err := sysmonitor.NewSysMonitoring(g.info.Id, g.monitor, CHAN_MONI)
 		if err != nil {
 			fmt.Println("Initialize Faild!! You have binded a event behavior, but the eventconf is incorrect!!" + err.Error())
 			return
 		}
-		g.monitor = monitor
-		g.monitor.StartMonitoring()
+		g.monitoring = monitoring
+		g.monitoring.StartMonitoring()
+	}
+
+	// privilege part of dc power to supervisor
+	if g.super != nil {
+		g.super.Privilege(datacenter.NewDataCenterPrivilege(g.dc))
 	}
 
 	theUrl, err := g.getListenUrl(g.info.Url)
@@ -251,8 +256,8 @@ func (g *GoNode) reportError(err interface{}) {
 	title := "!!! Auto Recovering..."
 	content := fmt.Sprint(err) +
 		"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
-	if g.even != nil {
-		g.even.OnReportError(g.info.Id, title, content)
+	if g.monitor != nil {
+		g.monitor.OnReportError(g.info.Id, title, content)
 	}
 	g.logger.Error(title + content)
 }

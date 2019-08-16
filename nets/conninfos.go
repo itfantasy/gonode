@@ -106,26 +106,39 @@ func AllConnIds() []string {
 	return keys
 }
 
-func AllSvcConnIds() []string {
+func AllLabelIds(label string) []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
 	for k, _ := range connInfos.kv {
-		if !IsCntConnId(k) {
+		if Label(k) == label {
 			keys = append(keys, k) // and this append will not create extra memory costing
 		}
 	}
 	return keys
 }
 
-func AllCntConnIds() []string {
+func AllSvcIds() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
 	for k, _ := range connInfos.kv {
-		if IsCntConnId(k) {
+		if !IsCntId(k) {
+			keys = append(keys, k) // and this append will not create extra memory costing
+		}
+	}
+	return keys
+}
+
+func AllCntIds() []string {
+	connInfos.LOCK.Lock()
+	defer connInfos.LOCK.Unlock()
+
+	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
+	for k, _ := range connInfos.kv {
+		if IsCntId(k) {
 			keys = append(keys, k) // and this append will not create extra memory costing
 		}
 	}
@@ -140,7 +153,7 @@ func IsIdExists(id string) bool {
 	return exist
 }
 
-func RanCntConnId() string {
+func RanCntId() string {
 	return "cnt-" + snowflake.Generate()
 }
 
@@ -148,6 +161,6 @@ func Label(id string) string {
 	return strings.Split(id, "-")[0]
 }
 
-func IsCntConnId(id string) bool {
+func IsCntId(id string) bool {
 	return Label(id) == "cnt"
 }

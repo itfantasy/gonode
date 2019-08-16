@@ -16,7 +16,7 @@ import (
 
 const (
 	Redis    string = "redis"
-	MySql           = "mySql"
+	MySql           = "mysql"
 	MongoDB         = "mongodb"
 	RabbitMQ        = "rabbitmq"
 	Kafka           = "kafka"

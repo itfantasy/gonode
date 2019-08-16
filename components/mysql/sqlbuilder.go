@@ -10,13 +10,14 @@ import (
 )
 
 type SqlBuilder struct {
-	db     *sql.DB
-	table  string
-	option int
-	optval map[string]string
-	selval string
-	where  string
-	etc    string
+	db      *sql.DB
+	sqlchan chan string
+	table   string
+	option  int
+	optval  map[string]string
+	selval  string
+	where   string
+	etc     string
 }
 
 const opt_SELECT int = 0
@@ -24,8 +25,9 @@ const opt_INSERT int = 1
 const opt_DELETE int = 2
 const opt_UPDATE int = 3
 
-func (s *SqlBuilder) doTable(db *sql.DB, tab string) *SqlBuilder {
+func (s *SqlBuilder) doTable(db *sql.DB, sqlchan chan string, tab string) *SqlBuilder {
 	s.db = db
+	s.sqlchan = sqlchan
 	s.table = tab
 	return s
 }
@@ -69,8 +71,9 @@ func (s *SqlBuilder) Or(field string, compare string, val string) *SqlBuilder {
 	return s
 }
 
-func (s *SqlBuilder) Etc(etc string) {
+func (s *SqlBuilder) Etc(etc string) *SqlBuilder {
 	s.etc += etc
+	return s
 }
 
 func (s *SqlBuilder) close() {
@@ -141,13 +144,13 @@ func (s *SqlBuilder) buildSql() (string, error) {
 		return ret, nil
 	}
 
-	return "", errors.New("未知的操作类型!")
+	return "", errors.New("unknown opt type!!")
 }
 
-func (s *SqlBuilder) Fetch() (*sql.Rows, error) {
+func (s *SqlBuilder) Query() (*sql.Rows, error) {
 
 	if s.db == nil {
-		return nil, errors.New("数据库链接尚未初始化!")
+		return nil, errors.New("Must init the sql conn at first!!")
 	}
 
 	str, err2 := s.buildSql()
@@ -160,10 +163,22 @@ func (s *SqlBuilder) Fetch() (*sql.Rows, error) {
 	return rows, err
 }
 
-func (s *SqlBuilder) Query() (sql.Result, error) {
-
+func (s *SqlBuilder) AsyncExec() error {
 	if s.db == nil {
-		return nil, errors.New("数据库链接尚未初始化!")
+		return errors.New("must init the sql conn at first!!")
+	}
+	str, err2 := s.buildSql()
+	if err2 != nil {
+		return err2
+	}
+	s.sqlchan <- str + s.etc
+	s.close()
+	return nil
+}
+
+func (s *SqlBuilder) Exec() (sql.Result, error) {
+	if s.db == nil {
+		return nil, errors.New("must init the sql conn at first!!")
 	}
 
 	str, err2 := s.buildSql()

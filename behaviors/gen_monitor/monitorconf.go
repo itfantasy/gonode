@@ -1,14 +1,14 @@
-package gen_event
+package gen_monitor
 
-type EventConf struct {
+type MonitorConf struct {
 	CpuLimit int
 	MemLimit int
 
 	MoniComp string
 }
 
-func NewEventConf() *EventConf {
-	e := new(EventConf)
+func NewMonitorConf() *MonitorConf {
+	e := new(MonitorConf)
 	e.CpuLimit = 80
 	e.MemLimit = 3 * 1024 * 1024
 	return e

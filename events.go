@@ -46,10 +46,12 @@ func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
 }
 
-func (e *EventHandler) OnNodeDestruct(id string) {
-	e.node.onNodeDestruct(id)
+func (e *EventHandler) OnUnregister(id string) {
+	e.node.onUnregister(id)
 }
-
+func (e *EventHandler) OnUpdateNodeStatus() interface{} {
+	return nets.AllSvcIds()
+}
 func (e *EventHandler) OnDigestError(err interface{}) {
 	e.node.reportError(err)
 }
@@ -82,7 +84,7 @@ func (g *GoNode) onCheckNode(origin string) (string, bool) {
 			g.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
-			connId := nets.RanCntConnId()
+			connId := nets.RanCntId()
 			return connId, true
 		}
 	} else {
@@ -127,9 +129,9 @@ func (g *GoNode) onDCError(err error) {
 	g.logger.Error(err.Error())
 }
 
-func (g *GoNode) onNodeDestruct(id string) {
+func (g *GoNode) onUnregister(id string) {
 	if g.info.Id == SUPERVISOR && g.super != nil {
-		g.super.OnDestruct(id)
+		g.super.OnUnregister(id)
 	}
 }
 

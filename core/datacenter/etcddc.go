@@ -5,7 +5,6 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components/etcd"
-	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
@@ -47,10 +46,11 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 	}
 
 	// and auto detect per msfrequency
-	if e.info.BackEnds != "" {
-		go func() {
-			for {
-				timer.Sleep(msfrequency)
+
+	go func() {
+		for {
+			timer.Sleep(msfrequency)
+			if e.info.BackEnds != "" {
 				ids, err := e.coreEtcd.Gets(channel)
 				if err != nil {
 					e.callbacks.OnDCError(err)
@@ -65,11 +65,11 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 								if checkOutOfDate(id) {
 									if _, err := e.coreEtcd.Delete(idstr); err != nil {
 										e.callbacks.OnDCError(err)
-									} else if _, err := e.coreEtcd.Delete(channel + "-Status/" + id); err != nil {
+									} else if _, err := e.coreEtcd.Delete("--status/" + channel + "/" + id); err != nil {
 										e.callbacks.OnDCError(err)
 									} else {
 										clearOutOfDate(id)
-										e.callbacks.OnNodeDestruct(id)
+										e.callbacks.OnUnregister(id)
 									}
 								}
 							} else {
@@ -78,12 +78,12 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 						}
 					}
 				}
-				if e.info.Id != "supervisor" {
-					e.updateNodeStatus(nets.AllSvcConnIds())
-				}
 			}
-		}()
-	}
+			if e.info.Id != "supervisor" {
+				e.updateNodeStatus()
+			}
+		}
+	}()
 
 	return nil
 }
@@ -122,28 +122,27 @@ func (e *EtcdDC) CheckNode(id string, sig string) bool {
 	}
 	return true
 }
-func (e *EtcdDC) updateNodeStatus(conns []string) error {
-	status, err := json.Encode(conns)
+func (e *EtcdDC) updateNodeStatus() error {
+	status, err := json.Encode(e.callbacks.OnUpdateNodeStatus())
 	if err != nil {
 		return err
 	}
-	err2 := e.coreEtcd.Set(e.channel+"-Status/"+e.info.Id, status)
+	err2 := e.coreEtcd.Set("--status/"+e.channel+"/"+e.info.Id, status)
 	if err2 != nil {
 		return err2
 	}
 	return nil
 }
-func (e *EtcdDC) GetNodeStatus(id string) ([]string, error) {
-	status, err := e.coreEtcd.Get(e.channel + "-Status/" + id)
+func (e *EtcdDC) GetNodeStatus(id string, ref interface{}) error {
+	status, err := e.coreEtcd.Get("--status/" + e.channel + "/" + id)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	conns := make([]string, 0, 0)
-	err2 := json.Decode(status, conns)
+	err2 := json.Decode(status, ref)
 	if err2 != nil {
-		return nil, err2
+		return err2
 	}
-	return conns, nil
+	return nil
 }
 func (e *EtcdDC) OnSubscribe(path string) {
 	if e.channel == path {

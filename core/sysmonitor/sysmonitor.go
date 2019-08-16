@@ -3,47 +3,47 @@ package sysmonitor
 import (
 	"strconv"
 
-	"github.com/itfantasy/gonode/behaviors/gen_event"
+	"github.com/itfantasy/gonode/behaviors/gen_monitor"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/utils/os"
 	"github.com/itfantasy/gonode/utils/timer"
 )
 
-type SysMonitor struct {
+type SysMonitoring struct {
 	id      string
-	even    gen_event.GenEvent
-	conf    *gen_event.EventConf
-	monitor *logger.Logger
+	monitor gen_monitor.GenMonitor
+	conf    *gen_monitor.MonitorConf
+	log     *logger.Logger
 }
 
-func NewSysMonitor(id string, even gen_event.GenEvent, monichan string) (*SysMonitor, error) {
-	s := new(SysMonitor)
+func NewSysMonitoring(id string, monitor gen_monitor.GenMonitor, monichan string) (*SysMonitoring, error) {
+	s := new(SysMonitoring)
 	s.id = id
-	s.even = even
-	s.conf = s.even.Setup()
+	s.monitor = monitor
+	s.conf = s.monitor.Setup()
 	if s.conf.MoniComp != "" {
-		monitor, err := logger.NewLogger(id, "INFO", monichan, s.conf.MoniComp)
+		log, err := logger.NewLogger(id, "INFO", monichan, s.conf.MoniComp)
 		if err != nil {
 			return nil, err
 		}
-		s.monitor = monitor
+		s.log = log
 	}
 	return s, nil
 }
 
-func (s *SysMonitor) StartMonitoring() {
+func (s *SysMonitoring) StartMonitoring() {
 	go func() {
 		for {
 			cpu := int(os.CurCpuPercent())
 			mem := int(os.CurMemoryUsage())
 			if cpu >= s.conf.CpuLimit {
-				s.even.OnCpuOverload(s.id, cpu)
+				s.monitor.OnCpuOverload(s.id, cpu)
 			}
 			if mem >= s.conf.MemLimit {
-				s.even.OnMemoryOverload(s.id, mem)
+				s.monitor.OnMemoryOverload(s.id, mem)
 			}
-			if s.monitor != nil {
-				s.monitor.Info("{\"cpu\":" + strconv.Itoa(cpu) + ",\"mem\":" + strconv.Itoa(mem) + "}")
+			if s.log != nil {
+				s.log.Info("{\"cpu\":" + strconv.Itoa(cpu) + ",\"mem\":" + strconv.Itoa(mem) + "}")
 			}
 			timer.Sleep(60000)
 		}

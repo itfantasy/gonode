@@ -5,7 +5,6 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components/redis"
-	"github.com/itfantasy/gonode/nets"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
@@ -55,10 +54,11 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 	r.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+r.info.Id)
 
 	// and auto detect per msfrequency
-	if r.info.BackEnds != "" {
-		go func() {
-			for {
-				timer.Sleep(msfrequency)
+
+	go func() {
+		for {
+			timer.Sleep(msfrequency)
+			if r.info.BackEnds != "" {
 				ids, err := r.coreRedis.SMembers(channel + ":all")
 				if err != nil {
 					r.callbacks.OnDCError(err)
@@ -78,7 +78,7 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 										r.callbacks.OnDCError(err)
 									} else {
 										clearOutOfDate(id)
-										r.callbacks.OnNodeDestruct(id)
+										r.callbacks.OnUnregister(id)
 									}
 								}
 							} else {
@@ -87,12 +87,13 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 						}
 					}
 				}
-				if r.info.Id == "supervisor" {
-					r.updateNodeStatus(nets.AllSvcConnIds())
-				}
 			}
-		}()
-	}
+			if r.info.Id != "supervisor" {
+				r.updateNodeStatus()
+			}
+		}
+	}()
+
 	return nil
 }
 func (r *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
@@ -130,8 +131,8 @@ func (r *RedisDC) CheckNode(id string, sig string) bool {
 	}
 	return true
 }
-func (r *RedisDC) updateNodeStatus(conns []string) error {
-	status, err := json.Encode(conns)
+func (r *RedisDC) updateNodeStatus() error {
+	status, err := json.Encode(r.callbacks.OnUpdateNodeStatus())
 	if err != nil {
 		return err
 	}
@@ -141,17 +142,16 @@ func (r *RedisDC) updateNodeStatus(conns []string) error {
 	}
 	return nil
 }
-func (r *RedisDC) GetNodeStatus(id string) ([]string, error) {
+func (r *RedisDC) GetNodeStatus(id string, ref interface{}) error {
 	status, err := r.coreRedis.Get(r.channel + ":status:" + id)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	conns := make([]string, 0, 0)
-	err2 := json.Decode(status, conns)
+	err2 := json.Decode(status, ref)
 	if err2 != nil {
-		return nil, err2
+		return err2
 	}
-	return conns, nil
+	return nil
 }
 func (r *RedisDC) OnSubscribe(channel string) {
 	if r.channel == channel {

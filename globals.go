@@ -50,16 +50,16 @@ func Label(id string) string {
 	return nets.Label(id)
 }
 
-func IsCntConn(id string) bool {
-	return nets.IsCntConnId(id)
+func IsCntId(id string) bool {
+	return nets.IsCntId(id)
 }
 
-func AllSvcConnIds() []string {
-	return nets.AllSvcConnIds()
+func AllSvcIds() []string {
+	return nets.AllSvcIds()
 }
 
-func AllCntConnIds() []string {
-	return nets.AllCntConnIds()
+func AllCntIds() []string {
+	return nets.AllCntIds()
 }
 
 func Log(obj interface{}) {

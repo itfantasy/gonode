@@ -95,6 +95,7 @@ func (e *Etcd) Get(path string) (string, error) {
 }
 
 func (e *Etcd) Gets(path string) (map[string]string, error) {
+	path += "/"
 	if e.root != "" {
 		path = e.root + "/" + path
 	}
@@ -120,6 +121,7 @@ func (e *Etcd) Publish(path string, val string) error {
 }
 
 func (e *Etcd) Subscribe(path string) {
+	path += "/"
 	if e.root != "" {
 		path = e.root + "/" + path
 	}

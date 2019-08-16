@@ -13,7 +13,8 @@ import (
 type IDCCallbacks interface {
 	OnNewNode(id string) error
 	OnDCError(err error)
-	OnNodeDestruct(id string)
+	OnUnregister(id string)
+	OnUpdateNodeStatus() interface{}
 }
 
 type IDataCenter interface {
@@ -22,7 +23,7 @@ type IDataCenter interface {
 	GetNodeInfo(string) (*gen_server.NodeInfo, error)
 	GetNodeSig(string) (string, error)
 	CheckNode(string, string) bool
-	GetNodeStatus(string) ([]string, error)
+	GetNodeStatus(string, interface{}) error
 }
 
 func NewDataCenter(regcomp string) (IDataCenter, error) {

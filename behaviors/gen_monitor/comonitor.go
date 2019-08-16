@@ -1,4 +1,4 @@
-package gen_event
+package gen_monitor
 
 import (
 	"errors"
@@ -8,13 +8,13 @@ import (
 	"github.com/itfantasy/gonode/components/email"
 )
 
-type CommEvent struct {
+type CoMonitor struct {
 	mail   *email.Email
 	sendTo string
 }
 
-func NewCommEvent(emailConf string, sendTo string) (*CommEvent, error) {
-	c := new(CommEvent)
+func NewCoMonitor(emailConf string, sendTo string) (*CoMonitor, error) {
+	c := new(CoMonitor)
 	comp, err := components.NewComponent(emailConf)
 	if err != nil {
 		return nil, err
@@ -28,16 +28,16 @@ func NewCommEvent(emailConf string, sendTo string) (*CommEvent, error) {
 	return c, nil
 }
 
-func (c *CommEvent) Setup() *EventConf {
-	e := NewEventConf()
+func (c *CoMonitor) Setup() *MonitorConf {
+	e := NewMonitorConf()
 	return e
 }
-func (c *CommEvent) OnReportError(id string, title string, content string) {
+func (c *CoMonitor) OnReportError(id string, title string, content string) {
 	c.mail.SendTo(c.sendTo, title, "["+id+"]::"+content)
 }
-func (c *CommEvent) OnCpuOverload(id string, cpu int) {
+func (c *CoMonitor) OnCpuOverload(id string, cpu int) {
 	c.mail.SendTo(c.sendTo, "CpuOverload", "["+id+"]:: The Cpu Has Overloaded!"+strconv.Itoa(cpu)+"%")
 }
-func (c *CommEvent) OnMemoryOverload(id string, mem int) {
+func (c *CoMonitor) OnMemoryOverload(id string, mem int) {
 	c.mail.SendTo(c.sendTo, "MemoryOverload", "["+id+"]:: The Memory Has Overloaded!"+strconv.Itoa(mem)+"KB")
 }
