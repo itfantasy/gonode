@@ -116,11 +116,6 @@ func (g *GoNode) Launch() {
 		g.monitoring.StartMonitoring()
 	}
 
-	// privilege part of dc power to supervisor
-	if g.super != nil {
-		g.super.Privilege(datacenter.NewDataCenterPrivilege(g.dc))
-	}
-
 	theUrl, err := g.getListenUrl(g.info.Url)
 	if err != nil {
 		fmt.Println("Initialize Faild!! Can not parse the url!!")

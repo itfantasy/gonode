@@ -62,6 +62,14 @@ func AllCntIds() []string {
 	return nets.AllCntIds()
 }
 
+func GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
+	return node.dc.GetNodeInfo(id)
+}
+
+func GetNodeStatus(id string, ref interface{}) error {
+	return node.dc.GetNodeStatus(id, ref)
+}
+
 func Log(obj interface{}) {
 	txt, ok := obj.(string)
 	if ok {
