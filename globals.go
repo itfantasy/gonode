@@ -34,8 +34,8 @@ func Connect(nickid string, url string) error {
 	return node.Connnect(nickid, url)
 }
 
-func Send(id string, msg []byte) {
-	node.Send(id, msg)
+func Send(id string, msg []byte) error {
+	return node.Send(id, msg)
 }
 
 func Close(id string) error {
