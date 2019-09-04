@@ -116,10 +116,6 @@ func (e *Etcd) Gets(path string) (map[string]string, error) {
 	return ret, nil
 }
 
-func (e *Etcd) Publish(path string, val string) error {
-	return e.Set(path, val)
-}
-
 func (e *Etcd) Subscribe(path string) {
 	path += "/"
 	if e.root != "" {

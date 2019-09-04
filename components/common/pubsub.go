@@ -1,8 +1,7 @@
 package common
 
 // the publish-subscrib equipment
-type IPubSubEquip interface {
-	Publish(string, string) error
+type ISubscribable interface {
 	Subscribe(string)
 	BindSubscriber(ISubscriber)
 }
