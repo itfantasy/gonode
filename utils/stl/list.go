@@ -1,8 +1,11 @@
 package stl
 
 import (
+	"encoding/json"
 	"errors"
 	"sync"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type List struct {
@@ -130,4 +133,24 @@ func (l *List) Clear() {
 	defer l.Unlock()
 
 	l.array = l.array[0:0]
+}
+
+func (l *List) ToJson() (string, error) {
+	b, err := json.Marshal(l.array)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (l *List) LoadJson(s string) error {
+	return json.Unmarshal([]byte(s), l.array)
+}
+
+func (l *List) ToBson() ([]byte, error) {
+	return bson.Marshal(l.array)
+}
+
+func (l *List) LoadBson(b []byte) error {
+	return bson.Unmarshal(b, l.array)
 }

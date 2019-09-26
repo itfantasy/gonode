@@ -7,7 +7,7 @@ import (
 	_yaml "gopkg.in/yaml.v2"
 )
 
-func Encode(obj interface{}) (string, error) {
+func Marshal(obj interface{}) (string, error) {
 	b, err := _yaml.Marshal(obj)
 	if err != nil {
 		return "", err
@@ -15,7 +15,7 @@ func Encode(obj interface{}) (string, error) {
 	return string(b), nil
 }
 
-func Decode(str string, ref interface{}) error {
+func Unmarshal(str string, ref interface{}) error {
 	err := _yaml.Unmarshal([]byte(str), ref)
 	return err
 }
@@ -37,7 +37,7 @@ func ToList(str string, capacity int) (*stl.List, error) {
 }
 
 func Println(obj interface{}) {
-	ret, err := Encode(obj)
+	ret, err := Marshal(obj)
 	if err != nil {
 		fmt.Println("ERROR Data...")
 	} else {

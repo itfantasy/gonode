@@ -14,7 +14,7 @@ type LogInfo struct {
 
 func ParseLog(str string) (*LogInfo, error) {
 	l := new(LogInfo)
-	err := json.Decode(str, l)
+	err := json.Unmarshal(str, l)
 	if err != nil {
 		return nil, err
 	}

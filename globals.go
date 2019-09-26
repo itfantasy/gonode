@@ -42,24 +42,24 @@ func Close(id string) error {
 	return node.Close(id)
 }
 
-func AllConnIds() []string {
-	return nets.AllConnIds()
-}
-
 func Label(id string) string {
 	return nets.Label(id)
 }
 
-func IsCntId(id string) bool {
-	return nets.IsCntId(id)
+func AllNodes() []string {
+	return nets.AllNodes()
 }
 
-func AllSvcIds() []string {
-	return nets.AllSvcIds()
+func LabelNodes(label string) []string {
+	return nets.LabelNodes(label)
 }
 
-func AllCntIds() []string {
-	return nets.AllCntIds()
+func AllPeers() []string {
+	return nets.AllPeers()
+}
+
+func IsPeer(id string) bool {
+	return nets.IsPeer(id)
 }
 
 func GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
@@ -75,7 +75,7 @@ func Log(obj interface{}) {
 	if ok {
 		node.Logger().Debug(txt)
 	} else {
-		msg, err := json.Encode(obj)
+		msg, err := json.Marshal(obj)
 		if err != nil {
 			fmt.Println("the console data format that cannot be converted!")
 		}

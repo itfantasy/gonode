@@ -35,7 +35,7 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 
 	// register self
 	e.info.Signature()
-	infoStr, err := json.Encode(e.info)
+	infoStr, err := json.Marshal(e.info)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (e *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 		return nil, err
 	}
 	var info gen_server.NodeInfo
-	err2 := json.Decode(infoStr, &info)
+	err2 := json.Unmarshal(infoStr, &info)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -123,7 +123,7 @@ func (e *EtcdDC) CheckNode(id string, sig string) bool {
 	return true
 }
 func (e *EtcdDC) updateNodeStatus() error {
-	status, err := json.Encode(e.callbacks.OnUpdateNodeStatus())
+	status, err := json.Marshal(e.callbacks.OnUpdateNodeStatus())
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (e *EtcdDC) GetNodeStatus(id string, ref interface{}) error {
 	if err != nil {
 		return err
 	}
-	err2 := json.Decode(status, ref)
+	err2 := json.Unmarshal(status, ref)
 	if err2 != nil {
 		return err2
 	}

@@ -206,7 +206,7 @@ func (g *GoNode) Listen(url string) {
 }
 
 func (g *GoNode) Connnect(nickid string, url string) error {
-	exist := nets.IsIdExists(nickid)
+	exist := nets.NodeConned(nickid)
 	if exist {
 		g.logger.Info("there is a same id in local record:" + url + "#" + nickid)
 		return nil

@@ -95,7 +95,7 @@ func GetInfoConnById(id string) (net.Conn, string, INetWorker, bool) {
 	}
 }
 
-func AllConnIds() []string {
+func AllNodesAndPeers() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -106,7 +106,7 @@ func AllConnIds() []string {
 	return keys
 }
 
-func AllLabelIds(label string) []string {
+func LabelNodes(label string) []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -119,33 +119,33 @@ func AllLabelIds(label string) []string {
 	return keys
 }
 
-func AllSvcIds() []string {
+func AllNodes() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
 	for k, _ := range connInfos.kv {
-		if !IsCntId(k) {
+		if !IsPeer(k) {
 			keys = append(keys, k) // and this append will not create extra memory costing
 		}
 	}
 	return keys
 }
 
-func AllCntIds() []string {
+func AllPeers() []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
 	keys := make([]string, 0, len(connInfos.kv)) // set the capacity
 	for k, _ := range connInfos.kv {
-		if IsCntId(k) {
+		if IsPeer(k) {
 			keys = append(keys, k) // and this append will not create extra memory costing
 		}
 	}
 	return keys
 }
 
-func IsIdExists(id string) bool {
+func NodeConned(id string) bool {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 
@@ -153,14 +153,14 @@ func IsIdExists(id string) bool {
 	return exist
 }
 
-func RanCntId() string {
-	return "cnt-" + snowflake.Generate()
+func RanPeerId() string {
+	return "#peer-" + snowflake.Generate()
 }
 
 func Label(id string) string {
 	return strings.Split(id, "-")[0]
 }
 
-func IsCntId(id string) bool {
-	return Label(id) == "cnt"
+func IsPeer(id string) bool {
+	return Label(id) == "#peer"
 }

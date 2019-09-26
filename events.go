@@ -50,7 +50,7 @@ func (e *EventHandler) OnUnregister(id string) {
 	e.node.onUnregister(id)
 }
 func (e *EventHandler) OnUpdateNodeStatus() interface{} {
-	return nets.AllSvcIds()
+	return nets.AllNodes()
 }
 func (e *EventHandler) OnDigestError(err interface{}) {
 	e.node.reportError(err)
@@ -84,11 +84,11 @@ func (g *GoNode) onCheckNode(origin string) (string, bool) {
 			g.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
-			connId := nets.RanCntId()
+			connId := nets.RanPeerId()
 			return connId, true
 		}
 	} else {
-		exist := nets.IsIdExists(id)
+		exist := nets.NodeConned(id)
 		if exist {
 			g.logger.Info("there is a same id in local record:" + url + "#" + id)
 			return "", false
@@ -102,7 +102,7 @@ func (g *GoNode) onNewNode(id string) error {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
-	exist := nets.IsIdExists(id)
+	exist := nets.NodeConned(id)
 	if !exist {
 		// check the local node is interested in the new node
 		if g.checkTargetId(id) {

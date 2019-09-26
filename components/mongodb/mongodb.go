@@ -6,6 +6,7 @@ import (
 
 	"github.com/itfantasy/gonode/components/common"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
@@ -108,4 +109,8 @@ func (m *MongoDB) Subscribe(colName string) error {
 
 func (m *MongoDB) BindSubscriber(subscriber common.ISubscriber) {
 	m.subscriber = subscriber
+}
+
+func (m *MongoDB) NewObjectId() primitive.ObjectID {
+	return primitive.NewObjectID()
 }

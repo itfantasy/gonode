@@ -39,7 +39,7 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 
 	// register self
 	r.info.Signature()
-	infoStr, err := json.Encode(r.info)
+	infoStr, err := json.Marshal(r.info)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (r *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 		return nil, err
 	}
 	var info gen_server.NodeInfo
-	err2 := json.Decode(infoStr, &info)
+	err2 := json.Unmarshal(infoStr, &info)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -132,7 +132,7 @@ func (r *RedisDC) CheckNode(id string, sig string) bool {
 	return true
 }
 func (r *RedisDC) updateNodeStatus() error {
-	status, err := json.Encode(r.callbacks.OnUpdateNodeStatus())
+	status, err := json.Marshal(r.callbacks.OnUpdateNodeStatus())
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (r *RedisDC) GetNodeStatus(id string, ref interface{}) error {
 	if err != nil {
 		return err
 	}
-	err2 := json.Decode(status, ref)
+	err2 := json.Unmarshal(status, ref)
 	if err2 != nil {
 		return err2
 	}

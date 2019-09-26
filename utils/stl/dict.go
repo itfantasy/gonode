@@ -5,6 +5,8 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Dictionary struct {
@@ -124,4 +126,24 @@ func (d *Dictionary) Clear() {
 	for key, _ := range d._map {
 		delete(d._map, key)
 	}
+}
+
+func (d *Dictionary) ToJson() (string, error) {
+	b, err := json.Marshal(d._map)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (d *Dictionary) LoadJson(s string) error {
+	return json.Unmarshal([]byte(s), d._map)
+}
+
+func (d *Dictionary) ToBson() ([]byte, error) {
+	return bson.Marshal(d._map)
+}
+
+func (d *Dictionary) LoadBson(b []byte) error {
+	return bson.Unmarshal(b, d._map)
 }

@@ -117,7 +117,7 @@ func NewComponent(url string) (IComponent, error) {
 				strVal := keyAndValue[1]
 				if strs.StartsWith(strVal, "{") && strs.EndsWith(strVal, "}") {
 					var opVal map[string]interface{}
-					if err := json.Decode(strVal, &opVal); err != nil {
+					if err := json.Unmarshal(strVal, &opVal); err != nil {
 						return nil, err
 					}
 					comp.SetOption(opKey, opVal)
