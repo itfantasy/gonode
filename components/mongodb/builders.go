@@ -19,10 +19,20 @@ const (
 	all           = "$all"
 	and           = "$and"
 	or            = "$or"
-	set           = "$set"
-	inc           = "$inc"
-	push          = "$push"
-	pull          = "$pull"
+
+	set  = "$set"
+	inc  = "$inc"
+	push = "$push"
+	pull = "$pull"
+
+	group    = "$group"
+	sum      = "$sum"
+	avg      = "$avg"
+	min      = "$min"
+	max      = "$max"
+	addToSet = "$addToSet"
+	first    = "$first"
+	last     = "$last"
 )
 
 func kv(k string, v interface{}) map[string]interface{} {
@@ -38,7 +48,7 @@ type FilterBuilder struct {
 	orFilters map[string]interface{}
 }
 
-func NewFilterBuilder() *FilterBuilder {
+func NewFilter() *FilterBuilder {
 	f := new(FilterBuilder)
 	f.filters = make(map[string]interface{})
 	return f
@@ -161,7 +171,7 @@ type OptionBuilder struct {
 	options map[string]interface{}
 }
 
-func NewOptionBuilder() *OptionBuilder {
+func NewOption() *OptionBuilder {
 	o := new(OptionBuilder)
 	o.options = make(map[string]interface{})
 	return o
@@ -193,4 +203,78 @@ func (o *OptionBuilder) Pull(key string, val interface{}) *OptionBuilder {
 
 func (o *OptionBuilder) Serialize() map[string]interface{} {
 	return o.options
+}
+
+type GroupBuilder struct {
+	groups map[interface{}]map[string]interface{}
+}
+
+func NewGroup() *GroupBuilder {
+	g := new(GroupBuilder)
+	g.groups = make(map[interface{}]map[string]interface{})
+	return g
+}
+
+func (g *GroupBuilder) groupby(by interface{}) interface{} {
+	strby, ok := by.(string)
+	if ok {
+		return "$" + strby
+	}
+	return by
+}
+
+func (g *GroupBuilder) addgroup(opt string, k interface{}, by interface{}, retfield string) *GroupBuilder {
+	by := g.groupby(by)
+	_, exist := g.groups[by]
+	if !exist {
+		g.groups[by] = kv("_id", by)
+	}
+	_map, _ := g.groups[by]
+	_map["retfield"] = kv(opt, k)
+	return g
+}
+
+func (g *GroupBuilder) CountBy(by interface{}) *GroupBuilder {
+	return g.addgroup(sum, 1, by)
+}
+
+func (g *GroupBuilder) SumBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(sum, key, by)
+}
+
+func (g *GroupBuilder) AvgBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(avg, key, by)
+}
+
+func (g *GroupBuilder) MinBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(min, key, by)
+}
+
+func (g *GroupBuilder) MaxBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(min, key, by)
+}
+
+func (g *GroupBuilder) PushBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(push, key, by)
+}
+
+func (g *GroupBuilder) AddToSetBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(addToSet, key, by)
+}
+
+func (g *GroupBuilder) FirstBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(first, key, by)
+}
+
+func (g *GroupBuilder) LastBy(key interface{}, by interface{}) *GroupBuilder {
+	return g.addgroup(last, key, by)
+}
+
+func (g *GroupBuilder) Serialize() []interface{} {
+	array := make([]interface{}, 0, len(g.groups))
+	for _, v := range g.groups {
+		array = append(array, v)
+	}
+	g.groups = nil
+	return array
 }
