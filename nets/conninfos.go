@@ -106,7 +106,7 @@ func AllNodesAndPeers() []string {
 	return keys
 }
 
-func LabelNodes(label string) []string {
+func Nodes(label string) []string {
 	connInfos.LOCK.Lock()
 	defer connInfos.LOCK.Unlock()
 

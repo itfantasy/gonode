@@ -21,12 +21,12 @@ type NodeInfo struct {
 
 	Sig string
 
-	UserDatas map[string]string
+	UsrDatas map[string]string
 }
 
 func NewNodeInfo() *NodeInfo {
 	info := new(NodeInfo)
-	info.UserDatas = make(map[string]string)
+	info.UsrDatas = make(map[string]string)
 	return info
 }
 

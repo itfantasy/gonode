@@ -209,7 +209,7 @@ type GroupBuilder struct {
 	groups map[interface{}]map[string]interface{}
 }
 
-func NewGroup() *GroupBuilder {
+func NewGroupBy() *GroupBuilder {
 	g := new(GroupBuilder)
 	g.groups = make(map[interface{}]map[string]interface{})
 	return g
@@ -223,8 +223,8 @@ func (g *GroupBuilder) groupby(by interface{}) interface{} {
 	return by
 }
 
-func (g *GroupBuilder) addgroup(opt string, k interface{}, by interface{}, retfield string) *GroupBuilder {
-	by := g.groupby(by)
+func (g *GroupBuilder) addgroup(opt string, k interface{}, gby interface{}, retfield string) *GroupBuilder {
+	by := g.groupby(gby)
 	_, exist := g.groups[by]
 	if !exist {
 		g.groups[by] = kv("_id", by)
@@ -234,40 +234,40 @@ func (g *GroupBuilder) addgroup(opt string, k interface{}, by interface{}, retfi
 	return g
 }
 
-func (g *GroupBuilder) CountBy(by interface{}) *GroupBuilder {
-	return g.addgroup(sum, 1, by)
+func (g *GroupBuilder) Count(by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(sum, 1, by, retfield)
 }
 
-func (g *GroupBuilder) SumBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(sum, key, by)
+func (g *GroupBuilder) Sum(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(sum, key, by, retfield)
 }
 
-func (g *GroupBuilder) AvgBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(avg, key, by)
+func (g *GroupBuilder) Avg(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(avg, key, by, retfield)
 }
 
-func (g *GroupBuilder) MinBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(min, key, by)
+func (g *GroupBuilder) Min(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(min, key, by, retfield)
 }
 
-func (g *GroupBuilder) MaxBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(min, key, by)
+func (g *GroupBuilder) Max(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(min, key, by, retfield)
 }
 
-func (g *GroupBuilder) PushBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(push, key, by)
+func (g *GroupBuilder) Push(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(push, key, by, retfield)
 }
 
-func (g *GroupBuilder) AddToSetBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(addToSet, key, by)
+func (g *GroupBuilder) AddToSet(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(addToSet, key, by, retfield)
 }
 
-func (g *GroupBuilder) FirstBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(first, key, by)
+func (g *GroupBuilder) First(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(first, key, by, retfield)
 }
 
-func (g *GroupBuilder) LastBy(key interface{}, by interface{}) *GroupBuilder {
-	return g.addgroup(last, key, by)
+func (g *GroupBuilder) Last(key interface{}, by interface{}, retfield string) *GroupBuilder {
+	return g.addgroup(last, key, by, retfield)
 }
 
 func (g *GroupBuilder) Serialize() []interface{} {

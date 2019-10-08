@@ -50,8 +50,8 @@ func AllNodes() []string {
 	return nets.AllNodes()
 }
 
-func LabelNodes(label string) []string {
-	return nets.LabelNodes(label)
+func Nodes(label string) []string {
+	return nets.Nodes(label)
 }
 
 func AllPeers() []string {
