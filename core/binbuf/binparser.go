@@ -230,6 +230,10 @@ func (b *BinParser) Object() interface{} {
 	return nil
 }
 
+func (b *BinParser) OverFlow() bool {
+	return b.bytesBuffer.Len() <= 0 || b.err != nil
+}
+
 func (b *BinParser) Error() error {
 	return b.err
 }
