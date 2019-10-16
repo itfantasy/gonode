@@ -2,10 +2,11 @@ package gonode
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
-	"github.com/itfantasy/gonode/utils/json"
 )
 
 // -------------- global ----------------
@@ -13,9 +14,7 @@ import (
 var node *GoNode = nil
 
 func init() {
-	if node == nil {
-		node = &GoNode{}
-	}
+	node = &GoNode{}
 }
 
 func Launch() {
@@ -70,31 +69,34 @@ func GetNodeStatus(id string, ref interface{}) error {
 	return node.dc.GetNodeStatus(id, ref)
 }
 
-func Log(obj interface{}) {
-	txt, ok := obj.(string)
-	if ok {
-		node.Logger().Debug(txt)
-	} else {
-		msg, err := json.Marshal(obj)
-		if err != nil {
-			fmt.Println("the console data format that cannot be converted!")
-		}
-		node.Logger().Debug(msg)
-	}
-}
-
-func LogWarn(msg string) {
-	node.Logger().Warn(msg)
-}
-
-func LogError(err error) {
-	node.Logger().Error(err.Error())
-}
-
 func Info() *gen_server.NodeInfo {
 	return node.Info()
 }
 
 func Self() string {
 	return node.Self()
+}
+
+func Log(lv int, arg0 interface{}, args ...interface{}) {
+	node.Logger().Log4Extend(lv, 2, arg0, args...)
+}
+func Debug(arg0 interface{}, args ...interface{}) {
+	node.Logger().Log4Extend(logger.DEBUG, 2, arg0, args...)
+}
+func LogInfo(arg0 interface{}, args ...interface{}) {
+	node.Logger().Log4Extend(logger.INFO, 2, arg0, args...)
+}
+func LogWarn(arg0 interface{}, args ...interface{}) {
+	node.Logger().Log4Extend(logger.WARN, 2, arg0, args...)
+}
+func LogError(arg0 interface{}, args ...interface{}) {
+	node.Logger().Log4Extend(logger.ERROR, 2, arg0, args...)
+}
+func Caller(callstack int) string {
+	pc, _, lineno, ok := runtime.Caller(1 + callstack)
+	src := ""
+	if ok {
+		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
+	}
+	return src
 }

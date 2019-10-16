@@ -85,7 +85,7 @@ func (g *GoNode) Launch() {
 	erl.BindErrorDigester(g.event)
 
 	// init the logger
-	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, CHAN_LOG, g.info.LogComp)
+	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, g.info.LogComp, CHAN_LOG)
 	if warn != nil {
 		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!" + warn.Error())
 	}

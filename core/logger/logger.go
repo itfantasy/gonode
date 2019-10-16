@@ -1,76 +1,95 @@
 package logger
 
 import (
-	"errors"
+	"fmt"
+	"runtime"
 	"strings"
-
-	"github.com/itfantasy/gonode/components"
-	"github.com/itfantasy/gonode/components/rabbitmq"
-	"github.com/itfantasy/gonode/utils/io"
-	log "github.com/jeanphorn/log4go"
+	"time"
 )
 
-type Logger = log.Filter
+type Logger struct {
+	category  string
+	level     int
+	logWriter LogWriter
+}
 
-func NewLogger(id string, loglevel string, logchan string, logcomp string) (*Logger, error) {
-	var globalLogger log.Logger
+func NewLogger(category string, loglevel string, logcomp string, logchan string) (*Logger, error) {
+	l := new(Logger)
+	l.category = category
+	l.level = StringToLevel(loglevel)
 	var warn error = nil
 	if strings.HasPrefix(logcomp, "rabbitmq://") {
-		comp, err := components.NewComponent(logcomp)
-		if err == nil {
-			rmq, ok := comp.(*rabbitmq.RabbitMQ)
-			if rmq != nil && ok {
-				globalLogger = log.Logger{
-					id: &log.Filter{getLogLevel(loglevel), NewRabbitMQLogWriter(rmq, logchan), id},
-				}
-				return globalLogger[id], nil
-			} else {
-				warn = errors.New("illegal log comp type! only rabbitmq or file or empty(console logger) ... ")
-			}
-		} else {
+		if logWriter, err := NewRabbitMQLogWriter(logcomp, logchan); err != nil {
 			warn = err
+		} else {
+			l.logWriter = logWriter
 		}
 	} else if strings.HasPrefix(logcomp, "file://") {
 		filePath := strings.TrimPrefix(logcomp, "file://")
-		if !io.FileExists(filePath) {
-			dir := io.FetchDirByFilePath(filePath)
-			io.MakeDir(dir)
+		if logWriter, err := NewFileLogWriter(filePath); err != nil {
+			warn = err
+		} else {
+			l.logWriter = logWriter
 		}
-		globalLogger = log.Logger{
-			id: &log.Filter{getLogLevel(loglevel), log.NewFileLogWriter(filePath, true, true), id},
-		}
-		return globalLogger[id], nil
-	} else if logcomp != "" {
-		warn = errors.New("illegal log comp type! only rabbitmq or file or empty(console logger) ... ")
+	} else {
+		l.logWriter = NewConsoleLogWriter()
 	}
-	//globalLogger = log.Logger{
-	//	id: &log.Filter{getLogLevel(loglevel), log.NewConsoleLogWriter(), id},
-	//}
-	//return globalLogger[id], warn
-	return log.Global["stdout"], warn
+	return l, warn
 }
 
-func getLogLevel(l string) log.Level {
-	var lvl log.Level
-	switch l {
-	case "FINEST":
-		lvl = log.FINEST
-	case "FINE":
-		lvl = log.FINE
-	case "DEBUG":
-		lvl = log.DEBUG
-	case "TRACE":
-		lvl = log.TRACE
-	case "INFO":
-		lvl = log.INFO
-	case "WARNING":
-		lvl = log.WARNING
-	case "ERROR":
-		lvl = log.ERROR
-	case "CRITICAL":
-		lvl = log.CRITICAL
-	default:
-		lvl = log.DEBUG
+func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...interface{}) {
+	if lvl < log.level {
+		return
 	}
-	return lvl
+	pc, _, lineno, ok := runtime.Caller(callstack)
+	src := ""
+	if ok {
+		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
+	}
+	var msg string = ""
+	switch any.(type) {
+	case string:
+		msg = any.(string)
+		if len(args) > 0 {
+			msg = fmt.Sprintf(msg, args...)
+		}
+	case error:
+		msg = any.(error).Error()
+		if len(args) > 0 {
+			msg = fmt.Sprintf(msg, args...)
+		}
+	default:
+		msg = fmt.Sprint(any)
+	}
+	info := new(LogInfo)
+	info.Category = log.category
+	info.Level = lvl
+	info.Message = msg
+	info.Source = src
+	info.SetCreated(time.Now())
+	if lvl < INFO {
+		info.Println()
+	} else {
+		log.logWriter.LogWrite(info)
+	}
+}
+
+func (log *Logger) Debug(arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(DEBUG, 2, arg0, args...)
+}
+
+func (log *Logger) Info(arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(INFO, 2, arg0, args...)
+}
+
+func (log *Logger) Warn(arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(WARN, 2, arg0, args...)
+}
+
+func (log *Logger) Error(arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(ERROR, 2, arg0, args...)
+}
+
+func (log *Logger) Fatal(arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(FATAL, 2, arg0, args...)
 }

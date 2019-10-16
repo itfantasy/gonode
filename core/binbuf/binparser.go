@@ -103,7 +103,7 @@ func (b *BinParser) String() string {
 	if b.err != nil {
 		return ""
 	}
-	if length > 10240 || length <= 0 {
+	if length > 10240 || length < 0 {
 		b.err = errors.New("illegal length for a string!!")
 		b.errInfo = fmt.Sprintf("String()")
 		return ""
