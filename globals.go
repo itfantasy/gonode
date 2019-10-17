@@ -1,8 +1,11 @@
 package gonode
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/core/logger"
@@ -99,4 +102,23 @@ func Caller(callstack int) string {
 		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
 	}
 	return src
+}
+
+func CustomError(errcode int, errmsg string) error {
+	if errcode == 0 {
+		return errors.New(errmsg)
+	}
+	return errors.New(strconv.Itoa(errcode) + "##" + errmsg)
+}
+
+func ErrorInfo(err error) (int, string) {
+	infos := strings.Split(err.Error(), "##")
+	if len(infos) != 2 {
+		return 0, err.Error()
+	}
+	i, err := strconv.Atoi(infos[0])
+	if err != nil {
+		return 0, err.Error()
+	}
+	return i, infos[1]
 }
