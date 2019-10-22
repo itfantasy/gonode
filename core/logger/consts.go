@@ -1,33 +1,26 @@
 package logger
 
 import (
-	"strconv"
 	"strings"
 )
 
 const (
 	DEBUG int = 0
-	INFO      = 100
-	WARN      = 500
-	ERROR     = 1000
-	FATAL     = 9999
+	INFO      = 1
+	WARN      = 2
+	ERROR     = 3
+	FATAL     = 4
 )
 
 func LevelToString(lv int) string {
-	if lv < INFO {
+	if lv == DEBUG {
 		return "DEBUG"
 	} else if lv == INFO {
 		return "INFO"
-	} else if lv > INFO && lv < WARN {
-		return "INFO-lv" + strconv.Itoa(lv-INFO)
 	} else if lv == WARN {
 		return "WARN"
-	} else if lv > WARN && lv < ERROR {
-		return "WARN-lv" + strconv.Itoa(lv-WARN)
 	} else if lv == ERROR {
 		return "ERROR"
-	} else if lv > ERROR && lv < FATAL {
-		return "ERROR-lv" + strconv.Itoa(lv-ERROR)
 	} else {
 		return "FATAL"
 	}

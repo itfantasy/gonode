@@ -41,7 +41,3 @@ func (l *LogInfo) FormatString() string {
 		l.Source,
 		l.Message)
 }
-
-func (l *LogInfo) Println() {
-	fmt.Println(l.FormatString())
-}
