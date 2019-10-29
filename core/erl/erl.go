@@ -17,6 +17,14 @@ func Spawn(fun func([]interface{}), capacity int) int64 {
 	return pid
 }
 
+func Spawns(fun func([]interface{}), num int, capacity int) []int64 {
+	pids := make([]int64, 0, num)
+	for i := 0; i < num; i++ {
+		pids = append(pids, Spawn(fun, capacity))
+	}
+	return pids
+}
+
 func Kill(pid int64) bool {
 	actor, ok := get(pid)
 	if !ok {
@@ -32,6 +40,23 @@ func Post(pid int64, args ...interface{}) bool {
 		return false
 	}
 	return actor.post(args)
+}
+
+func PostAny(pids []int64, args ...interface{}) bool {
+	num := len(pids)
+	if num <= 0 {
+		return false
+	}
+	_pid := pids[0]
+	_wait := Waiting(_pid)
+	for i := 1; i < num; i++ {
+		tmpPid := pids[i]
+		tmpWait := Waiting(tmpPid)
+		if tmpWait < _wait {
+			_pid = tmpPid
+		}
+	}
+	return Post(_pid, args...)
 }
 
 func Running(pid int64) bool {

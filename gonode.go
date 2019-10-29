@@ -130,7 +130,7 @@ func (g *GoNode) Launch() {
 / /_/ / /_/ / /|  / /_/ / /_/ /  __/
 \____/\____/_/ |_/\____/\__,_/\___/ 
 
- --------------------------------- ` + VERSION)
+ -----------:: gonode ::---------- ` + VERSION)
 
 	fmt.Println(g.info.ToString())
 	g.logger.Info("node is starting... " + g.info.Id)

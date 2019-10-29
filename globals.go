@@ -2,8 +2,6 @@ package gonode
 
 import (
 	"errors"
-	"fmt"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -80,9 +78,6 @@ func Self() string {
 	return node.Self()
 }
 
-func Log(lv int, arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(lv, 2, arg0, args...)
-}
 func Debug(arg0 interface{}, args ...interface{}) {
 	node.Logger().Log4Extend(logger.DEBUG, 2, arg0, args...)
 }
@@ -95,23 +90,16 @@ func LogWarn(arg0 interface{}, args ...interface{}) {
 func LogError(arg0 interface{}, args ...interface{}) {
 	node.Logger().Log4Extend(logger.ERROR, 2, arg0, args...)
 }
-func Caller(callstack int) string {
-	pc, _, lineno, ok := runtime.Caller(1 + callstack)
-	src := ""
-	if ok {
-		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
-	}
-	return src
+func LogSource(callstack int) string {
+	return node.Logger().Source(callstack + 2)
 }
-
-func CustomError(errcode int, errmsg string) error {
+func Error(errcode int, errmsg string) error {
 	if errcode == 0 {
 		return errors.New(errmsg)
 	}
 	return errors.New(strconv.Itoa(errcode) + "##" + errmsg)
 }
-
-func ErrorInfo(err error) (int, string) {
+func ErrInfo(err error) (int, string) {
 	infos := strings.Split(err.Error(), "##")
 	if len(infos) != 2 {
 		return 0, err.Error()

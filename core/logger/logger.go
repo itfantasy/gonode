@@ -37,15 +37,20 @@ func NewLogger(category string, loglevel string, logcomp string, logchan string)
 	return l, warn
 }
 
-func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...interface{}) {
-	if lvl < log.level {
-		return
-	}
+func (log *Logger) Source(callstack int) string {
 	pc, _, lineno, ok := runtime.Caller(callstack)
 	src := ""
 	if ok {
 		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
 	}
+	return src
+}
+
+func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...interface{}) {
+	if lvl < log.level {
+		return
+	}
+	src := log.Source(callstack)
 	var msg string = ""
 	switch any.(type) {
 	case string:
@@ -67,11 +72,15 @@ func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...i
 	info.Message = msg
 	info.Source = src
 	info.SetCreated(time.Now())
-	if lvl < INFO {
-		info.Println()
+	if lvl <= DEBUG {
+		info.Println() // DEBUG always only to console
 	} else {
 		log.logWriter.LogWrite(info)
 	}
+}
+
+func (log *Logger) Log(lvl int, arg0 interface{}, args ...interface{}) {
+	log.Log4Extend(lvl, 2, arg0, args...)
 }
 
 func (log *Logger) Debug(arg0 interface{}, args ...interface{}) {
