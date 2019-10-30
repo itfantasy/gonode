@@ -273,7 +273,7 @@ func (g *GroupBuilder) Last(key interface{}, by interface{}, retfield string) *G
 func (g *GroupBuilder) Serialize() []interface{} {
 	array := make([]interface{}, 0, len(g.groups))
 	for _, v := range g.groups {
-		array = append(array, v)
+		array = append(array, kv(group, v))
 	}
 	g.groups = nil
 	return array

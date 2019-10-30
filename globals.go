@@ -79,19 +79,19 @@ func Self() string {
 }
 
 func Debug(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.DEBUG, 2, arg0, args...)
+	node.Logger().Log4Extend(logger.DEBUG, 3, arg0, args...)
 }
 func LogInfo(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.INFO, 2, arg0, args...)
+	node.Logger().Log4Extend(logger.INFO, 3, arg0, args...)
 }
 func LogWarn(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.WARN, 2, arg0, args...)
+	node.Logger().Log4Extend(logger.WARN, 3, arg0, args...)
 }
 func LogError(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.ERROR, 2, arg0, args...)
+	node.Logger().Log4Extend(logger.ERROR, 3, arg0, args...)
 }
 func LogSource(callstack int) string {
-	return node.Logger().Source(callstack + 2)
+	return node.Logger().Source(callstack + 3)
 }
 func Error(errcode int, errmsg string) error {
 	if errcode == 0 {
