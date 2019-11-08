@@ -13,7 +13,7 @@ import (
 	"github.com/itfantasy/gonode/behaviors/supervisor"
 
 	"github.com/itfantasy/gonode/core/datacenter"
-	"github.com/itfantasy/gonode/core/erl"
+	"github.com/itfantasy/gonode/core/goes"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/core/sysmonitor"
 
@@ -82,7 +82,7 @@ func (g *GoNode) Launch() {
 	}
 	g.info = info
 	g.event = newEventHandler(g)
-	erl.BindErrorDigester(g.event)
+	goes.BindErrorDigester(g.event)
 
 	// init the logger
 	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, g.info.LogComp, CHAN_LOG)

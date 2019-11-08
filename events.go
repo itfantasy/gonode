@@ -1,7 +1,7 @@
 package gonode
 
 import (
-	"github.com/itfantasy/gonode/core/erl"
+	"github.com/itfantasy/gonode/core/goes"
 	"github.com/itfantasy/gonode/nets"
 )
 
@@ -14,38 +14,30 @@ func newEventHandler(node *GoNode) *EventHandler {
 	e.node = node
 	return e
 }
-
 func (e *EventHandler) OnConn(id string) {
-	defer erl.AutoRecover(e)
+	defer goes.AutoRecover(e)
 	e.node.onConn(id)
 }
-
 func (e *EventHandler) OnMsg(id string, msg []byte) {
-	defer erl.AutoRecover(e)
+	defer goes.AutoRecover(e)
 	e.node.onMsg(id, msg)
 }
-
 func (e *EventHandler) OnClose(id string, reason error) {
-	defer erl.AutoRecover(e)
+	defer goes.AutoRecover(e)
 	e.node.onClose(id, reason)
 }
-
 func (e *EventHandler) OnError(id string, err error) {
 	e.node.onError(id, err)
 }
-
 func (e *EventHandler) OnCheckNode(origin string) (string, bool) {
 	return e.node.onCheckNode(origin)
 }
-
 func (e *EventHandler) OnNewNode(id string) error {
 	return e.node.onNewNode(id)
 }
-
 func (e *EventHandler) OnDCError(err error) {
 	e.node.onDCError(err)
 }
-
 func (e *EventHandler) OnUnregister(id string) {
 	e.node.onUnregister(id)
 }

@@ -1,4 +1,4 @@
-package erl
+package goes
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ var actors sync.Map
 
 func Spawn(fun func([]interface{}), capacity int) int64 {
 	pid := snowflake.GenerateRaw()
-	actor := newActor(pid, fun, capacity)
+	actor := newActor(pid, fun, capacity, 0, nil)
 	actors.Store(pid, actor)
 	return pid
 }
@@ -23,6 +23,20 @@ func Spawns(fun func([]interface{}), num int, capacity int) []int64 {
 		pids = append(pids, Spawn(fun, capacity))
 	}
 	return pids
+}
+
+func Timer(fun func([]interface{}), repeatRate int, args ...interface{}) int64 {
+	pid := snowflake.GenerateRaw()
+	actor := newActor(pid, fun, 0, repeatRate, args)
+	actors.Store(pid, actor)
+	return pid
+}
+
+func Go(fun func([]interface{}), args ...interface{}) int64 {
+	pid := snowflake.GenerateRaw()
+	actor := newActor(pid, fun, 0, 0, args)
+	actors.Store(pid, actor)
+	return pid
 }
 
 func Kill(pid int64) bool {
@@ -48,10 +62,10 @@ func PostAny(pids []int64, args ...interface{}) bool {
 		return false
 	}
 	_pid := pids[0]
-	_wait := Waiting(_pid)
+	_wait := Blocking(_pid)
 	for i := 1; i < num; i++ {
 		tmpPid := pids[i]
-		tmpWait := Waiting(tmpPid)
+		tmpWait := Blocking(tmpPid)
 		if tmpWait < _wait {
 			_pid = tmpPid
 		}
@@ -59,7 +73,7 @@ func PostAny(pids []int64, args ...interface{}) bool {
 	return Post(_pid, args...)
 }
 
-func Running(pid int64) bool {
+func Living(pid int64) bool {
 	actor, ok := get(pid)
 	if !ok {
 		return false
@@ -67,7 +81,7 @@ func Running(pid int64) bool {
 	return !actor.isKilling
 }
 
-func Waiting(pid int64) int {
+func Blocking(pid int64) int {
 	actor, ok := get(pid)
 	if !ok {
 		return -1
@@ -76,6 +90,18 @@ func Waiting(pid int64) int {
 		return -1
 	}
 	return len(actor.argschan)
+}
+
+func LivingNum() int {
+	return 0
+}
+
+func NormalNum() int {
+	return 0
+}
+
+func BlockingNum() int {
+	return 0
 }
 
 func get(pid int64) (*Actor, bool) {
