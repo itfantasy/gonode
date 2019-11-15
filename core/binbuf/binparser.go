@@ -239,5 +239,9 @@ func (b *BinParser) Error() error {
 }
 
 func (b *BinParser) ErrorInfo() string {
-	return b.errInfo + "|" + b.err.Error()
+	if b.err != nil {
+		return b.errInfo + "|" + b.err.Error()
+	} else {
+		return ""
+	}
 }

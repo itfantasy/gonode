@@ -182,7 +182,7 @@ func (o *OptionBuilder) addOption(k string, v interface{}) {
 }
 
 func (o *OptionBuilder) Set(key string, val interface{}) *OptionBuilder {
-	o.addOption(key, val)
+	o.addOption(set, kv(key, val))
 	return o
 }
 
