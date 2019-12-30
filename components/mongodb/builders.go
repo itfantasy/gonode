@@ -168,40 +168,44 @@ func (f *FilterBuilder) Serialize() map[string]interface{} {
 }
 
 type OptionBuilder struct {
-	options map[string]interface{}
+	options map[string]map[string]interface{}
 }
 
 func NewOption() *OptionBuilder {
 	o := new(OptionBuilder)
-	o.options = make(map[string]interface{})
+	o.options = make(map[string]map[string]interface{})
 	return o
 }
 
-func (o *OptionBuilder) addOption(k string, v interface{}) {
-	o.options[k] = v
+func (o *OptionBuilder) addOption(k string, key string, val interface{}) {
+	_, exist := o.options[k]
+	if !exist {
+		o.options[k] = make(map[string]interface{})
+	}
+	o.options[k][key] = val
 }
 
 func (o *OptionBuilder) Set(key string, val interface{}) *OptionBuilder {
-	o.addOption(set, kv(key, val))
+	o.addOption(set, key, val)
 	return o
 }
 
 func (o *OptionBuilder) Inc(key string, num int) *OptionBuilder {
-	o.addOption(inc, kv(key, num))
+	o.addOption(inc, key, num)
 	return o
 }
 
 func (o *OptionBuilder) Push(key string, val interface{}) *OptionBuilder {
-	o.addOption(push, kv(key, val))
+	o.addOption(push, key, val)
 	return o
 }
 
 func (o *OptionBuilder) Pull(key string, val interface{}) *OptionBuilder {
-	o.addOption(pull, kv(key, val))
+	o.addOption(pull, key, val)
 	return o
 }
 
-func (o *OptionBuilder) Serialize() map[string]interface{} {
+func (o *OptionBuilder) Serialize() map[string]map[string]interface{} {
 	return o.options
 }
 
