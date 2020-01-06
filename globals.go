@@ -85,12 +85,6 @@ func Post(pid int64, args ...interface{}) bool {
 func PostAny(pids []int64, args ...interface{}) bool {
 	return goes.PostAny(pids, args...)
 }
-func Living(pid int64) bool {
-	return goes.Living(pid)
-}
-func Blocking(pid int64) int {
-	return goes.Blocking(pid)
-}
 
 func Debug(arg0 interface{}, args ...interface{}) {
 	node.Logger().Log4Extend(logger.DEBUG, 3, arg0, args...)
