@@ -72,6 +72,11 @@ func (w *WSNetWorker) Send(conn net.Conn, msg []byte) error {
 	return err
 }
 
+func (w *WSNetWorker) SendText(conn net.Conn, str string) error {
+	err := websocket.Message.Send(conn.(*websocket.Conn), str)
+	return err
+}
+
 func (w *WSNetWorker) onConn(conn *websocket.Conn, id string) {
 	// record the set from id to conn
 	err := nets.AddConnInfo(id, nets.WS, conn, w)

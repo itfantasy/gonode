@@ -1,7 +1,7 @@
 package gonode
 
 import (
-	"github.com/itfantasy/gonode/core/goes"
+	"github.com/itfantasy/gonode/core/errs"
 	"github.com/itfantasy/gonode/nets"
 )
 
@@ -12,18 +12,19 @@ type EventHandler struct {
 func newEventHandler(node *GoNode) *EventHandler {
 	e := new(EventHandler)
 	e.node = node
+	errs.BindDigester(e)
 	return e
 }
 func (e *EventHandler) OnConn(id string) {
-	defer goes.AutoRecover(e)
+	defer errs.AutoRecover()
 	e.node.onConn(id)
 }
 func (e *EventHandler) OnMsg(id string, msg []byte) {
-	defer goes.AutoRecover(e)
+	defer errs.AutoRecover()
 	e.node.onMsg(id, msg)
 }
 func (e *EventHandler) OnClose(id string, reason error) {
-	defer goes.AutoRecover(e)
+	defer errs.AutoRecover()
 	e.node.onClose(id, reason)
 }
 func (e *EventHandler) OnError(id string, err error) {

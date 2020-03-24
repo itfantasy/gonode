@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-func Encode(data []byte) ([]byte, error) {
+func Marshal(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	_, err := gw.Write(data)
@@ -17,7 +17,7 @@ func Encode(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func Decode(data []byte) ([]byte, error) {
+func Unmarshal(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	_, err := buf.Write(data)
 	if err != nil {

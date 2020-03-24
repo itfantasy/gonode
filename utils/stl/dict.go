@@ -2,11 +2,8 @@ package stl
 
 import (
 	"encoding/json"
-	"errors"
 	"reflect"
 	"sync"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Dictionary struct {
@@ -26,28 +23,28 @@ func NewDictionaryRaw(raw map[string]interface{}) *Dictionary {
 	return &dict
 }
 
-func (d *Dictionary) Add(key string, value interface{}) error {
+func (d *Dictionary) Add(key string, value interface{}) bool {
 	d.Lock()
 	defer d.Unlock()
 
 	_, exist := d._map[key]
 	if exist {
-		return errors.New("Has Contains The Same Key!")
+		return false
 	}
 	d._map[key] = value
-	return nil
+	return true
 }
 
-func (d *Dictionary) Remove(key string) error {
+func (d *Dictionary) Remove(key string) bool {
 	d.Lock()
 	defer d.Unlock()
 
 	_, exist := d._map[key]
 	if exist {
 		delete(d._map, key)
-		return nil
+		return true
 	}
-	return errors.New("Do Not Has The Key:" + key)
+	return false
 }
 
 func (d *Dictionary) Set(key string, value interface{}) {
@@ -65,7 +62,7 @@ func (d *Dictionary) Get(key string) (interface{}, bool) {
 	return v, exist
 }
 
-func (d *Dictionary) Count() int {
+func (d *Dictionary) Len() int {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -90,6 +87,15 @@ func (d *Dictionary) ContainsValue(value interface{}) bool {
 		}
 	}
 	return false
+}
+
+func (d *Dictionary) ForEach(fun func(string, interface{})) {
+	d.RLock()
+	defer d.RUnlock()
+
+	for k, v := range d._map {
+		fun(k, v)
+	}
 }
 
 func (d *Dictionary) KeyValuePairs() map[string]interface{} {
@@ -138,12 +144,4 @@ func (d *Dictionary) ToJson() (string, error) {
 
 func (d *Dictionary) LoadJson(s string) error {
 	return json.Unmarshal([]byte(s), d._map)
-}
-
-func (d *Dictionary) ToBson() ([]byte, error) {
-	return bson.Marshal(d._map)
-}
-
-func (d *Dictionary) LoadBson(b []byte) error {
-	return bson.Unmarshal(b, d._map)
 }

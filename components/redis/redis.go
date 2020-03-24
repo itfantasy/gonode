@@ -94,34 +94,11 @@ func (r *Redis) Close() {
 	r.RedisClient.Close()
 }
 
-// -------------string----------------
+// -------------client--------------
 
-func (r *Redis) Get(key string) (string, error) {
+func (r *Redis) GetClient() *RedisClient {
 	rc := r.RedisClient.Get()
-	str, err := redis.String(rc.Do("GET", key))
-	rc.Close()
-	return str, err
-}
-
-func (r *Redis) Set(key string, val string) (bool, error) {
-	rc := r.RedisClient.Get()
-	suc, err := redis.String(rc.Do("SET", key, val))
-	rc.Close()
-	return suc == "OK", err
-}
-
-func (r *Redis) Exists(key string) (bool, error) {
-	rc := r.RedisClient.Get()
-	ret, err := redis.Bool(rc.Do("EXISTS", key))
-	rc.Close()
-	return ret, err
-}
-
-func (r *Redis) Delete(key string) (int64, error) {
-	rc := r.RedisClient.Get()
-	suc, err := redis.Int64(rc.Do("DEL", key))
-	rc.Close()
-	return suc, err
+	return NewRedisClient(rc)
 }
 
 // -------------pub/sub----------------
@@ -130,10 +107,11 @@ func (r *Redis) BindSubscriber(subscriber common.ISubscriber) {
 	r.subscriber = subscriber
 }
 
-func (r *Redis) Publish(channel string, msg string) {
+func (r *Redis) Publish(channel string, msg string) error {
 	rc := r.RedisClient.Get()
 	rc.Do("PUBLISH", channel, msg)
 	rc.Close()
+	return nil
 }
 
 func (r *Redis) Subscribe(channel string) {
@@ -166,6 +144,36 @@ func (r *Redis) Subscribe(channel string) {
 			}
 		}
 	}
+}
+
+// -------------string----------------
+
+func (r *Redis) Get(key string) (string, error) {
+	rc := r.RedisClient.Get()
+	str, err := redis.String(rc.Do("GET", key))
+	rc.Close()
+	return str, err
+}
+
+func (r *Redis) Set(key string, val string) (bool, error) {
+	rc := r.RedisClient.Get()
+	suc, err := redis.String(rc.Do("SET", key, val))
+	rc.Close()
+	return suc == "OK", err
+}
+
+func (r *Redis) Exists(key string) (bool, error) {
+	rc := r.RedisClient.Get()
+	ret, err := redis.Bool(rc.Do("EXISTS", key))
+	rc.Close()
+	return ret, err
+}
+
+func (r *Redis) Delete(key string) (int64, error) {
+	rc := r.RedisClient.Get()
+	suc, err := redis.Int64(rc.Do("DEL", key))
+	rc.Close()
+	return suc, err
 }
 
 // -------------set----------------

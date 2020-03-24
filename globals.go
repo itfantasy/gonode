@@ -3,7 +3,6 @@ package gonode
 import (
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/core/errs"
-	"github.com/itfantasy/gonode/core/goes"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
 )
@@ -39,20 +38,18 @@ func Connect(nickid string, url string) error {
 func Send(id string, msg []byte) error {
 	return node.Send(id, msg)
 }
+func SendAll(ids []string, msg []byte) []error {
+	return node.SendAll(ids, msg)
+}
 func Close(id string) error {
 	return node.Close(id)
 }
+
 func Label(id string) string {
 	return nets.Label(id)
 }
-func AllNodes() []string {
-	return nets.AllNodes()
-}
 func Nodes(label string) []string {
 	return nets.Nodes(label)
-}
-func AllPeers() []string {
-	return nets.AllPeers()
 }
 func IsPeer(id string) bool {
 	return nets.IsPeer(id)
@@ -62,28 +59,6 @@ func GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
 }
 func GetNodeStatus(id string, ref interface{}) error {
 	return node.dc.GetNodeStatus(id, ref)
-}
-
-func Spawn(fun func([]interface{}), capacity int) int64 {
-	return goes.Spawn(fun, capacity)
-}
-func Spawns(fun func([]interface{}), num int, capacity int) []int64 {
-	return goes.Spawns(fun, num, capacity)
-}
-func Timer(fun func([]interface{}), repeatRate int, args ...interface{}) int64 {
-	return goes.Timer(fun, repeatRate, args...)
-}
-func Go(fun func([]interface{}), args ...interface{}) int64 {
-	return goes.Go(fun, args...)
-}
-func Kill(pid int64) bool {
-	return goes.Kill(pid)
-}
-func Post(pid int64, args ...interface{}) bool {
-	return goes.Post(pid, args...)
-}
-func PostAny(pids []int64, args ...interface{}) bool {
-	return goes.PostAny(pids, args...)
 }
 
 func Debug(arg0 interface{}, args ...interface{}) {
@@ -102,9 +77,9 @@ func LogSource(callstack int) string {
 	return node.Logger().Source(callstack + 2)
 }
 
-func Error(errcode int, errmsg string) error {
-	return errs.New(errcode, errmsg)
+func CustomError(errcode int, errmsg string) error {
+	return errs.CustomError(errcode, errmsg)
 }
-func ErrInfo(err error) (int, string) {
-	return errs.Info(err)
+func ErrorInfo(err error) (int, string) {
+	return errs.ErrorInfo(err)
 }

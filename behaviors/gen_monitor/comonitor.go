@@ -41,3 +41,6 @@ func (c *CoMonitor) OnCpuOverload(id string, cpu int) {
 func (c *CoMonitor) OnMemoryOverload(id string, mem int) {
 	c.mail.SendTo(c.sendTo, "MemoryOverload", "["+id+"]:: The Memory Has Overloaded!"+strconv.Itoa(mem)+"KB")
 }
+func (c *CoMonitor) OnCustomEvent(id string, evncode int, content string) {
+	c.mail.SendTo(c.sendTo, "["+id+"]::Event #"+strconv.Itoa(evncode), "["+id+"]::"+content)
+}

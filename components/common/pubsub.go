@@ -11,3 +11,7 @@ type ISubscriber interface {
 	OnSubMessage(string, string)
 	OnSubError(string, error)
 }
+
+type IPublisher interface {
+	Publish(string, string) error
+}

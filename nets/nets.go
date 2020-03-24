@@ -10,6 +10,7 @@ type INetWorker interface {
 	Listen(url string) error
 	Connect(id string, url string, origin string) error
 	Send(conn net.Conn, msg []byte) error
+	SendText(conn net.Conn, str string) error
 	Close(id string, conn net.Conn) error
 	BindEventListener(eventListener INetEventListener) error
 }

@@ -29,7 +29,7 @@ var stateLock sync.RWMutex
 func AutoPing(netWorker INetWorker) {
 	dirtyStates := make([]*ConnState, 0, 100)
 	for {
-		ms := ts.MS()
+		ms := ts.MilliSecond()
 		timer.Sleep(2000)
 		stateLock.Lock()
 		for id, state := range connStates {
@@ -78,7 +78,7 @@ func ResetConnState(id string, netWorker INetWorker, msg []byte) bool {
 	state, exist := connStates[id]
 	if exist {
 		state.ping = false
-		state.ts = ts.MS()
+		state.ts = ts.MilliSecond()
 		if msg[0] == 35 { // '#'
 			strmsg := string(msg)
 			if strmsg == "#pong" {

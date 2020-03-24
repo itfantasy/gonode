@@ -5,4 +5,5 @@ type GenMonitor interface {
 	OnReportError(string, string, string)
 	OnCpuOverload(string, int)
 	OnMemoryOverload(string, int)
+	OnCustomEvent(string, int, string)
 }

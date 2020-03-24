@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type List struct {
@@ -86,7 +84,7 @@ func (l *List) Contains(item interface{}) bool {
 	return l.IndexOf(item) >= 0
 }
 
-func (l *List) Count() int {
+func (l *List) Len() int {
 	l.RLock()
 	defer l.RUnlock()
 
@@ -100,7 +98,7 @@ func (l *List) Capacity() int {
 	return cap(l.array)
 }
 
-func (l *List) Values() []interface{} {
+func (l *List) Items() []interface{} {
 	l.RLock()
 	defer l.RUnlock()
 
@@ -128,6 +126,15 @@ func (l *List) Set(index int, item interface{}) error {
 	return nil
 }
 
+func (l *List) ForEach(fun func(interface{})) {
+	l.RLock()
+	defer l.RUnlock()
+
+	for _, v := range l.array {
+		fun(v)
+	}
+}
+
 func (l *List) Clear() {
 	l.Lock()
 	defer l.Unlock()
@@ -145,12 +152,4 @@ func (l *List) ToJson() (string, error) {
 
 func (l *List) LoadJson(s string) error {
 	return json.Unmarshal([]byte(s), l.array)
-}
-
-func (l *List) ToBson() ([]byte, error) {
-	return bson.Marshal(l.array)
-}
-
-func (l *List) LoadBson(b []byte) error {
-	return bson.Unmarshal(b, l.array)
 }

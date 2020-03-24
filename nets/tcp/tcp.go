@@ -173,6 +173,10 @@ func (t *TcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	return err2
 }
 
+func (t *TcpNetWorker) SendText(conn net.Conn, str string) error {
+	return t.Send(conn, []byte(str))
+}
+
 func (t *TcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
 	err := nets.AddConnInfo(id, nets.TCP, conn, t)

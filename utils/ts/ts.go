@@ -22,19 +22,19 @@ const FORMAT_DAY_B = "01/02/2006"
 // yyyyMMdd
 const FORMAT_DAY_C = "20060102"
 
-func Now() int64 {
+func Time() int64 {
 	return time.Now().Unix()
 }
 
-func MS() int64 {
+func MilliSecond() int64 {
 	return time.Now().UnixNano() / 1e6
 }
 
 func Day() int64 {
-	return NowToDay(Now())
+	return TimeToDay(Time())
 }
 
-func StrToNow(str string, format string) int64 {
+func StrToTime(str string, format string) int64 {
 	tm, err := time.Parse(format, str)
 	if err != nil {
 		return 0
@@ -42,8 +42,8 @@ func StrToNow(str string, format string) int64 {
 	return tm.Unix()
 }
 
-func NowToStr(now int64, format string) string {
-	tm := time.Unix(now, 0)
+func TimeToStr(sec int64, format string) string {
+	tm := time.Unix(sec, 0)
 	return tm.Format(format)
 }
 
@@ -52,25 +52,25 @@ func StrToDay(str string, format string) int64 {
 		return Day()
 	}
 
-	var now int64
+	var sec int64
 	tm, err := time.Parse(format, str)
 	if err == nil {
-		now = tm.Unix()
+		sec = tm.Unix()
 	}
 
-	return NowToDay(now)
+	return TimeToDay(sec)
 }
 
 func DayToStr(day int64, format string) string {
-	now := DayToNow(day)
-	tm := time.Unix(now, 0)
+	sec := DayToTime(day)
+	tm := time.Unix(sec, 0)
 	return tm.Format(format)
 }
 
-func NowToDay(now int64) int64 {
-	return (now + 28800) / 86400
+func TimeToDay(sec int64) int64 {
+	return (sec + 28800) / 86400
 }
 
-func DayToNow(day int64) int64 {
+func DayToTime(day int64) int64 {
 	return day*86400 - 28800
 }

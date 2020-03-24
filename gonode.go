@@ -13,7 +13,6 @@ import (
 	"github.com/itfantasy/gonode/behaviors/supervisor"
 
 	"github.com/itfantasy/gonode/core/datacenter"
-	"github.com/itfantasy/gonode/core/goes"
 	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/core/sysmonitor"
 
@@ -82,7 +81,6 @@ func (g *GoNode) Launch() {
 	}
 	g.info = info
 	g.event = newEventHandler(g)
-	goes.BindErrorDigester(g.event)
 
 	// init the logger
 	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, g.info.LogComp, CHAN_LOG)
@@ -220,6 +218,15 @@ func (g *GoNode) Send(id string, msg []byte) error {
 		return errors.New("there is not the id in local record!")
 	}
 	return netWorker.Send(conn, msg)
+}
+
+func (g *GoNode) SendAll(ids []string, msg []byte) []error {
+	errs := make([]error, 0, len(ids))
+	for _, id := range ids {
+		err := g.Send(id, msg)
+		errs = append(errs, err)
+	}
+	return errs
 }
 
 func (g *GoNode) Close(id string) error {

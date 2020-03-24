@@ -94,6 +94,10 @@ func (k *KcpNetWorker) Send(conn net.Conn, msg []byte) error {
 	return err
 }
 
+func (k *KcpNetWorker) SendText(conn net.Conn, str string) error {
+	return k.Send(conn, []byte(str))
+}
+
 func (k *KcpNetWorker) onConn(conn net.Conn, id string) {
 	// record the set from id to conn
 	err := nets.AddConnInfo(id, nets.KCP, conn, k)

@@ -1,7 +1,6 @@
 package stl
 
 import (
-	"errors"
 	"sync"
 )
 
@@ -22,28 +21,28 @@ func NewHashTableRaw(raw map[interface{}]interface{}) *HashTable {
 	return &dict
 }
 
-func (h *HashTable) Add(key interface{}, value interface{}) error {
+func (h *HashTable) Add(key interface{}, value interface{}) bool {
 	h.Lock()
 	defer h.Unlock()
 
 	_, exist := h._map[key]
 	if exist {
-		return errors.New("Has Contains The Same Key!")
+		return false
 	}
 	h._map[key] = value
-	return nil
+	return true
 }
 
-func (h *HashTable) Remove(key interface{}) error {
+func (h *HashTable) Remove(key interface{}) bool {
 	h.Lock()
 	defer h.Unlock()
 
 	_, exist := h._map[key]
 	if exist {
 		delete(h._map, key)
-		return nil
+		return true
 	}
-	return errors.New("Do Not Has The Key!")
+	return false
 }
 
 func (h *HashTable) Set(key interface{}, value interface{}) {
@@ -61,7 +60,7 @@ func (h *HashTable) Get(key interface{}) (interface{}, bool) {
 	return v, exist
 }
 
-func (h *HashTable) Count() int {
+func (h *HashTable) Len() int {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -86,6 +85,15 @@ func (h *HashTable) ContainsValue(value interface{}) bool {
 		}
 	}
 	return false
+}
+
+func (h *HashTable) ForEach(fun func(interface{}, interface{})) {
+	h.RLock()
+	defer h.RUnlock()
+
+	for k, v := range h._map {
+		fun(k, v)
+	}
 }
 
 func (h *HashTable) KeyValuePairs() map[interface{}]interface{} {
