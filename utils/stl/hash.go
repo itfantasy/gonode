@@ -100,6 +100,14 @@ func (h *HashTable) KeyValuePairs() map[interface{}]interface{} {
 	h.RLock()
 	defer h.RUnlock()
 
+	ret := make(map[interface{}]interface{})
+	for k, v := range h._map {
+		ret[k] = v
+	}
+	return ret
+}
+
+func (h *HashTable) Raw() map[interface{}]interface{} {
 	return h._map
 }
 

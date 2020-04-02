@@ -5,8 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-
-	"github.com/itfantasy/gonode/core/binbuf/types"
+	"reflect"
 )
 
 type BinBuffer struct {
@@ -191,46 +190,53 @@ func (b *BinBuffer) PushObject(value interface{}) *BinBuffer {
 		return b
 	}
 	if value == nil {
-		b.PushByte(types.Null)
+		b.PushByte(Null)
 		b.PushByte(byte(0))
 		return b
 	}
 	switch value.(type) {
 	case byte:
-		b.PushByte(types.Byte)
+		b.PushByte(Byte)
 		b.PushByte(value.(byte))
 	case bool:
-		b.PushByte(types.Bool)
+		b.PushByte(Bool)
 		b.PushBool(value.(bool))
 	case int16:
-		b.PushByte(types.Short)
+		b.PushByte(Short)
 		b.PushShort(value.(int16))
 	case int:
-		b.PushByte(types.Int)
+		b.PushByte(Int)
 		b.PushInt(int32(value.(int)))
 	case int32:
-		b.PushByte(types.Int)
+		b.PushByte(Int)
 		b.PushInt(value.(int32))
 	case int64:
-		b.PushByte(types.Long)
+		b.PushByte(Long)
 		b.PushLong(value.(int64))
 	case string:
 		b.PushByte(byte('s'))
 		b.PushString(value.(string))
 	case float32:
-		b.PushByte(types.Float)
+		b.PushByte(Float)
 		b.PushFloat(value.(float32))
 	case []int32:
-		b.PushByte(types.Ints)
+		b.PushByte(Ints)
 		b.PushInts(value.([]int32))
 	case []interface{}:
-		b.PushByte(types.Array)
+		b.PushByte(Array)
 		b.PushArray(value.([]interface{}))
 	case map[interface{}]interface{}:
-		b.PushByte(types.Hash)
+		b.PushByte(Hash)
 		b.PushHash(value.(map[interface{}]interface{}))
 	default:
-		b.err = errors.New("unsupported type!!")
+		itype := reflect.TypeOf(value)
+		ctype, ok := _customBufferExtends[itype]
+		if ok {
+			b.PushByte(ctype.bSign)
+			ctype.serializeFunc(b, value)
+		} else {
+			b.err = errors.New("unsupported type!!")
+		}
 	}
 	if b.err != nil {
 		b.errInfo = fmt.Sprintf("PushObject(%v)", value)

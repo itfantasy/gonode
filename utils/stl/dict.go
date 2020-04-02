@@ -102,6 +102,14 @@ func (d *Dictionary) KeyValuePairs() map[string]interface{} {
 	d.RLock()
 	defer d.RUnlock()
 
+	ret := make(map[string]interface{})
+	for k, v := range d._map {
+		ret[k] = v
+	}
+	return ret
+}
+
+func (d *Dictionary) Raw() map[string]interface{} {
 	return d._map
 }
 

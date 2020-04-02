@@ -93,7 +93,13 @@ func (h *HashSet) Clear() {
 	}
 }
 
-func (h *HashSet) Intersect(another *HashSet) {
+func (h *HashSet) Intersect(another *HashSet) *HashSet {
+	clone := h.Clone()
+	clone.IntersectWith(another)
+	return clone
+}
+
+func (h *HashSet) IntersectWith(another *HashSet) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -104,7 +110,13 @@ func (h *HashSet) Intersect(another *HashSet) {
 	}
 }
 
-func (h *HashSet) Except(another *HashSet) {
+func (h *HashSet) Except(another *HashSet) *HashSet {
+	clone := h.Clone()
+	clone.ExceptWith(another)
+	return clone
+}
+
+func (h *HashSet) ExceptWith(another *HashSet) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -115,10 +127,16 @@ func (h *HashSet) Except(another *HashSet) {
 	}
 }
 
-func (h *HashSet) Union(another *HashSet) {
+func (h *HashSet) Union(another *HashSet) *HashSet {
+	clone := h.Clone()
+	clone.UnionWith(another)
+	return clone
+}
+
+func (h *HashSet) UnionWith(another *HashSet) {
 	another.ForEach(func(item interface{}) {
-		if !h.Contains(k) {
-			h.Add(k)
+		if !h.Contains(item) {
+			h.Add(item)
 		}
 	})
 }
@@ -139,6 +157,10 @@ func (h *HashSet) IsSubset(another *HashSet) bool {
 	return true
 }
 
-func (h *HashSet) IsSuperset(another *HashSet) {
+func (h *HashSet) IsSuperset(another *HashSet) bool {
 	return another.IsSubset(h)
+}
+
+func (h *HashSet) Clone() *HashSet {
+	return NewHashSetRaw(h.Items())
 }

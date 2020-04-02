@@ -102,6 +102,14 @@ func (l *List) Items() []interface{} {
 	l.RLock()
 	defer l.RUnlock()
 
+	ret := make([]interface{}, 0, len(l.array))
+	for _, item := range l.array {
+		ret = append(ret, item)
+	}
+	return ret
+}
+
+func (l *List) Raw() []interface{} {
 	return l.array
 }
 

@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-
-	"github.com/itfantasy/gonode/core/binbuf/types"
 )
 
 type BinParser struct {
@@ -189,27 +187,27 @@ func (b *BinParser) Object() interface{} {
 		return nil
 	}
 	switch c {
-	case types.Byte:
+	case Byte:
 		return b.Byte()
-	case types.Bool:
+	case Bool:
 		return b.Bool()
-	case types.Short:
+	case Short:
 		return b.Short()
-	case types.Int:
+	case Int:
 		return b.Int()
-	case types.Long:
+	case Long:
 		return b.Long()
-	case types.String:
+	case String:
 		return b.String()
-	case types.Float:
+	case Float:
 		return b.Float()
-	case types.Ints:
+	case Ints:
 		return b.Ints()
-	case types.Array:
+	case Array:
 		return b.Array()
-	case types.Hash:
+	case Hash:
 		return b.Hash()
-	case types.Null:
+	case Null:
 		none := b.Byte()
 		if b.err != nil {
 			return nil
@@ -221,9 +219,14 @@ func (b *BinParser) Object() interface{} {
 			return nil
 		}
 	default:
-		b.err = errors.New("unknow type !!!")
-		b.errInfo = fmt.Sprintf("Object()")
-		return nil
+		ctype, ok := _customParserExtends[c]
+		if ok {
+			return ctype.deserializeFunc(b)
+		} else {
+			b.err = errors.New("unknow type !!!")
+			b.errInfo = fmt.Sprintf("Object()")
+			return nil
+		}
 	}
 	b.err = errors.New("unknow type !!!")
 	b.errInfo = fmt.Sprintf("Object()")
