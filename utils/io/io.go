@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-func CurDir() string {
+func CurrentDir() string {
 	file, _ := exec.LookPath(os.Args[0])
 	path, _ := filepath.Abs(file)
-	ret := FetchDirByFilePath(path)
+	ret := FetchDirByPath(path)
 	return ret
 }
 
@@ -56,7 +56,7 @@ func MakeDir(dir string) {
 	os.MkdirAll(dir, os.ModePerm)
 }
 
-func FetchDirByFilePath(path string) string {
+func FetchDirByPath(path string) string {
 	fix := "/"
 	if strings.Contains(path, "\\") && !strings.Contains(path, "/") {
 		fix = "\\"

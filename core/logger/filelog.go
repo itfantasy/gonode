@@ -34,7 +34,7 @@ func (f *FileLogWriter) dispose() {
 func NewFileLogWriter(filename string) (*FileLogWriter, error) {
 	f := new(FileLogWriter)
 	if !io.FileExists(filename) {
-		dir := io.FetchDirByFilePath(filename)
+		dir := io.FetchDirByPath(filename)
 		io.MakeDir(dir)
 	}
 	f.filename = filename
