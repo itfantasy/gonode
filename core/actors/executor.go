@@ -8,7 +8,7 @@ type Executor struct {
 	pid     int64
 	actchan chan func()
 	killing bool
-	tag     interface{}
+	binder  interface{}
 }
 
 func newexecutor(pid int64, capacity int) *Executor {
@@ -72,10 +72,10 @@ func (e *Executor) TaskLen() int {
 	return len(e.actchan)
 }
 
-func (e *Executor) Tag() interface{} {
-	return e.tag
+func (e *Executor) Binder() interface{} {
+	return e.binder
 }
 
-func (e *Executor) SetTag(tag interface{}) {
-	e.tag = tag
+func (e *Executor) SetBinder(obj interface{}) {
+	e.binder = obj
 }

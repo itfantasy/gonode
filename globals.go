@@ -62,19 +62,19 @@ func GetNodeStatus(id string, ref interface{}) error {
 }
 
 func Debug(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.DEBUG, 3, arg0, args...)
+	node.Logger().Log4Extend(logger.DEBUG, 1, arg0, args...)
 }
 func LogInfo(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.INFO, 3, arg0, args...)
+	node.Logger().Log4Extend(logger.INFO, 1, arg0, args...)
 }
 func LogWarn(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.WARN, 3, arg0, args...)
+	node.Logger().Log4Extend(logger.WARN, 1, arg0, args...)
 }
 func LogError(arg0 interface{}, args ...interface{}) {
-	node.Logger().Log4Extend(logger.ERROR, 3, arg0, args...)
+	node.Logger().Log4Extend(logger.ERROR, 1, arg0, args...)
 }
 func LogSource(callstack int) string {
-	return node.Logger().Source(callstack + 2)
+	return node.Logger().Source(callstack + 1)
 }
 
 func CustomError(errcode int, errmsg string) error {

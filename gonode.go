@@ -131,8 +131,8 @@ func (g *GoNode) Launch() {
  -----------:: gonode ::---------- ` + VERSION)
 
 	fmt.Println(g.info.ToString())
-	g.logger.Info("node is starting... " + g.info.Id)
 	g.behavior.Start()
+	g.logger.Info("The node has been Launched!" + g.info.Id)
 	select {}
 	g.logger.Error("shuting down!!!")
 }
@@ -206,7 +206,7 @@ func (g *GoNode) Listen(url string) {
 func (g *GoNode) Connnect(nickid string, url string) error {
 	exist := nets.NodeConned(nickid)
 	if exist {
-		g.logger.Info("there is a same id in local record:" + url + "#" + nickid)
+		g.logger.Info("The nickid has been existed!" + url + "#" + nickid)
 		return nil
 	}
 	return g.netWorker(url).Connect(nickid, url, g.Origin())
@@ -215,7 +215,7 @@ func (g *GoNode) Connnect(nickid string, url string) error {
 func (g *GoNode) Send(id string, msg []byte) error {
 	conn, _, netWorker, exist := nets.GetInfoConnById(id)
 	if !exist {
-		return errors.New("there is not the id in local record!")
+		return errors.New("Cannot find the sending id!" + id)
 	}
 	return netWorker.Send(conn, msg)
 }
@@ -232,7 +232,7 @@ func (g *GoNode) SendAll(ids []string, msg []byte) []error {
 func (g *GoNode) Close(id string) error {
 	conn, _, netWorker, exist := nets.GetInfoConnById(id)
 	if !exist {
-		return errors.New("there is not the id in local record!")
+		return errors.New("Cannot find the closing id!" + id)
 	}
 	return netWorker.Close(id, conn)
 }

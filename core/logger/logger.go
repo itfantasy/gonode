@@ -38,7 +38,7 @@ func NewLogger(category string, loglevel string, logcomp string, logchan string)
 }
 
 func (log *Logger) Source(callstack int) string {
-	pc, _, lineno, ok := runtime.Caller(callstack)
+	pc, _, lineno, ok := runtime.Caller(callstack + 1)
 	src := ""
 	if ok {
 		src = fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineno)
@@ -50,7 +50,7 @@ func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...i
 	if lvl < log.level {
 		return
 	}
-	src := log.Source(callstack)
+	src := log.Source(callstack + 1)
 	var msg string = ""
 	switch any.(type) {
 	case string:
@@ -80,25 +80,25 @@ func (log *Logger) Log4Extend(lvl int, callstack int, any interface{}, args ...i
 }
 
 func (log *Logger) Log(lvl int, arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(lvl, 2, arg0, args...)
+	log.Log4Extend(lvl, 1, arg0, args...)
 }
 
 func (log *Logger) Debug(arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(DEBUG, 2, arg0, args...)
+	log.Log4Extend(DEBUG, 1, arg0, args...)
 }
 
 func (log *Logger) Info(arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(INFO, 2, arg0, args...)
+	log.Log4Extend(INFO, 1, arg0, args...)
 }
 
 func (log *Logger) Warn(arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(WARN, 2, arg0, args...)
+	log.Log4Extend(WARN, 1, arg0, args...)
 }
 
 func (log *Logger) Error(arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(ERROR, 2, arg0, args...)
+	log.Log4Extend(ERROR, 1, arg0, args...)
 }
 
 func (log *Logger) Fatal(arg0 interface{}, args ...interface{}) {
-	log.Log4Extend(FATAL, 2, arg0, args...)
+	log.Log4Extend(FATAL, 1, arg0, args...)
 }
