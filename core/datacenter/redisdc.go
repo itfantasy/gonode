@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/components/redis"
+	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
@@ -14,13 +14,13 @@ const (
 )
 
 type RedisDC struct {
-	coreRedis *redis.Redis
+	coreRedis *components.Redis
 	callbacks IDCCallbacks
 	info      *gen_server.NodeInfo
 	channel   string
 }
 
-func NewRedisDC(red *redis.Redis) *RedisDC {
+func NewRedisDC(red *components.Redis) *RedisDC {
 	r := new(RedisDC)
 	r.coreRedis = red
 	return r
@@ -43,15 +43,16 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 	if err != nil {
 		return err
 	}
-	_, err2 := r.coreRedis.Set(channel+":infos:"+r.info.Id, infoStr)
-	if err2 != nil {
-		return err2
+
+	if len(r.info.EndPoints) > 0 {
+		if _, err := r.coreRedis.Set(channel+":infos:"+r.info.NodeId, infoStr); err != nil {
+			return err
+		}
+		if _, err := r.coreRedis.SAdd(channel+":all", r.info.NodeId); err != nil {
+			return err
+		}
+		r.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+r.info.NodeId)
 	}
-	_, err3 := r.coreRedis.SAdd(channel+":all", r.info.Id)
-	if err3 != nil {
-		return err3
-	}
-	r.coreRedis.Publish(channel, GONODE_NEW_NODE+"#"+r.info.Id)
 
 	// and auto detect per msfrequency
 
@@ -65,9 +66,9 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 					continue
 				}
 				for _, id := range ids {
-					if id != r.info.Id {
+					if id != r.info.NodeId {
 						connErr := r.callbacks.OnNewNode(id)
-						if r.info.Id == "supervisor" {
+						if r.info.NodeId == "supervisor" {
 							if connErr != nil {
 								if checkOutOfDate(id) {
 									if _, err := r.coreRedis.Delete(r.channel + ":infos:" + id); err != nil {
@@ -88,7 +89,7 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 					}
 				}
 			}
-			if r.info.Id != "supervisor" {
+			if r.info.NodeId != "supervisor" {
 				r.updateNodeStatus()
 			}
 		}
@@ -97,7 +98,7 @@ func (r *RedisDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, m
 	return nil
 }
 func (r *RedisDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
-	if r.info.Id == id {
+	if r.info.NodeId == id {
 		return r.info, nil
 	}
 	infoStr, err := r.coreRedis.Get(r.channel + ":infos:" + id)
@@ -136,7 +137,7 @@ func (r *RedisDC) updateNodeStatus() error {
 	if err != nil {
 		return err
 	}
-	_, err2 := r.coreRedis.Set(r.channel+":status:"+r.info.Id, status)
+	_, err2 := r.coreRedis.Set(r.channel+":status:"+r.info.NodeId, status)
 	if err2 != nil {
 		return err2
 	}

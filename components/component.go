@@ -4,25 +4,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/itfantasy/gonode/components/email"
-	"github.com/itfantasy/gonode/components/etcd"
-	"github.com/itfantasy/gonode/components/mongodb"
-	"github.com/itfantasy/gonode/components/mysql"
-	"github.com/itfantasy/gonode/components/rabbitmq"
-	"github.com/itfantasy/gonode/components/redis"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/strs"
 )
 
 const (
-	Redis    string = "redis"
-	MySql           = "mysql"
-	MongoDB         = "mongodb"
-	RabbitMQ        = "rabbitmq"
-	Kafka           = "kafka"
-	Nsq             = "nsq"
-	Etcd            = "etcd"
-	Email           = "email"
+	redis    string = "redis"
+	mysql           = "mysql"
+	mongodb         = "mongodb"
+	rabbitmq        = "rabbitmq"
+	kafka           = "kafka"
+	nsq             = "nsq"
+	etcd            = "etcd"
+	email           = "email"
 
 	urlParasError = "illegal url!! —— componenttype://usr:pass@url/host?op_key=op_val&op_key=op_val...."
 )
@@ -84,18 +78,18 @@ func NewComponent(url string) (IComponent, error) {
 
 	var comp IComponent = nil
 	switch compType {
-	case Redis:
-		comp = redis.NewRedis()
-	case MongoDB:
-		comp = mongodb.NewMongoDB()
-	case MySql:
-		comp = mysql.NewMySql()
-	case RabbitMQ:
-		comp = rabbitmq.NewRabbitMQ()
-	case Etcd:
-		comp = etcd.NewEtcd()
-	case Email:
-		comp = email.NewEmail()
+	case redis:
+		comp = NewRedis()
+	case mongodb:
+		comp = NewMongoDB()
+	case mysql:
+		comp = NewMySql()
+	case rabbitmq:
+		comp = NewRabbitMQ()
+	case etcd:
+		comp = NewEtcd()
+	case email:
+		comp = NewEmail()
 	}
 
 	if comp == nil {

@@ -63,8 +63,8 @@ func FetchDirByPath(path string) string {
 	}
 	splitstring := strings.Split(path, fix)
 	size := len(splitstring)
-	splitstring = strings.Split(path, splitstring[size-1])
-	ret := strings.Replace(splitstring[0], "\\", "/", size-1)
+	dir := strings.TrimRight(path, splitstring[size-1])
+	ret := strings.Replace(dir, "\\", "/", size-1)
 	return ret
 }
 

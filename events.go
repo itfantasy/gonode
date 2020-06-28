@@ -73,7 +73,7 @@ func (g *GoNode) onCheckNode(origin string) (string, bool) {
 		b = g.dc.CheckNode(id, sig)
 	}
 	if !b {
-		if !g.info.Pub {
+		if !g.info.IsPub {
 			g.logger.Info("not a inside node! give up the conn:" + origin)
 			return "", false
 		} else {
@@ -103,9 +103,9 @@ func (g *GoNode) onNewNode(id string) error {
 			// find the node url by the id
 			info, err := g.dc.GetNodeInfo(id)
 			if err == nil {
-				if connErr := g.Connnect(info.Id, info.Url); connErr != nil {
+				if connErr := g.Connnect(info.NodeId, info.EndPoints[0]); connErr != nil {
 					g.logger.Error(connErr.Error() + "[" + id + "]")
-					if g.info.Id == SUPERVISOR && g.super != nil {
+					if g.info.NodeId == SUPERVISOR && g.super != nil {
 						g.super.OnConnFailed(id)
 					}
 					return connErr
@@ -123,7 +123,7 @@ func (g *GoNode) onDCError(err error) {
 }
 
 func (g *GoNode) onUnregister(id string) {
-	if g.info.Id == SUPERVISOR && g.super != nil {
+	if g.info.NodeId == SUPERVISOR && g.super != nil {
 		g.super.OnUnregister(id)
 	}
 }

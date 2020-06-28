@@ -17,17 +17,23 @@ use a pingpong package to check if the kcpconn is alive
 */
 
 type ConnState struct {
-	id   string
-	conn net.Conn
-	ping bool  // if has sended a ping pck
-	ts   int64 // the ts of the last recivingmsg
+	id        string
+	conn      net.Conn
+	netWorker INetWorker
+	ping      bool  // if has sended a ping pck
+	ts        int64 // the ts of the last recivingmsg
 }
 
 var connStates map[string]*ConnState
 var stateLock sync.RWMutex
+var ing bool
 
-func AutoPing(netWorker INetWorker) {
+func AutoPing() {
+	if ing {
+		return
+	}
 	dirtyStates := make([]*ConnState, 0, 100)
+	ing = true
 	for {
 		ms := ts.MilliSecond()
 		timer.Sleep(2000)
@@ -38,26 +44,27 @@ func AutoPing(netWorker INetWorker) {
 				fmt.Println("pingpong time out.." + id)
 			} else if ms-state.ts > 2000 {
 				//fmt.Println("sending a ping to..." + id)
-				go netWorker.Send(state.conn, []byte("#ping"))
+				go state.netWorker.Send(state.conn, []byte("#ping"))
 				state.ping = true
 			}
 			timer.Sleep(10)
 		}
 		stateLock.Unlock()
 		for _, state := range dirtyStates {
-			netWorker.Close(state.id, state.conn)
+			state.netWorker.Close(state.id, state.conn)
 		}
 		dirtyStates = dirtyStates[0:0]
 	}
 }
 
-func newConnState(id string, conn net.Conn) {
+func newConnState(id string, conn net.Conn, netWorker INetWorker) {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 
 	state := new(ConnState)
 	state.id = id
 	state.conn = conn
+	state.netWorker = netWorker
 	connStates[state.id] = state
 }
 
@@ -71,7 +78,7 @@ func disposeConnState(id string) {
 	}
 }
 
-func ResetConnState(id string, netWorker INetWorker, msg []byte) bool {
+func ResetConnState(id string, msg []byte) bool {
 	stateLock.Lock()
 	defer stateLock.Unlock()
 
@@ -86,7 +93,7 @@ func ResetConnState(id string, netWorker INetWorker, msg []byte) bool {
 				return true
 			} else if strmsg == "#ping" {
 				//fmt.Println("re sending pong to..." + id)
-				go netWorker.Send(state.conn, []byte("#pong")) // return the pong pck
+				go state.netWorker.Send(state.conn, []byte("#pong")) // return the pong pck
 				return true
 			}
 		}

@@ -1,10 +1,10 @@
 package supervisor
 
 type SuperInfo struct {
-	Url      string
-	RegComp  string
-	LogComp  string
-	MoniComp string
+	RegDC     string
+	NameSpace string
+	EndPoints []string
+	IsPub     bool
 }
 
 func NewSuperInfo() *SuperInfo {

@@ -6,8 +6,6 @@ import (
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/components"
-	"github.com/itfantasy/gonode/components/etcd"
-	"github.com/itfantasy/gonode/components/redis"
 )
 
 type IDCCallbacks interface {
@@ -32,10 +30,10 @@ func NewDataCenter(regcomp string) (IDataCenter, error) {
 		return nil, err
 	}
 	switch comp.(type) {
-	case *redis.Redis:
-		return NewRedisDC(comp.(*redis.Redis)), nil
-	case *etcd.Etcd:
-		return NewEtcdDC(comp.(*etcd.Etcd)), nil
+	case *components.Redis:
+		return NewRedisDC(comp.(*components.Redis)), nil
+	case *components.Etcd:
+		return NewEtcdDC(comp.(*components.Etcd)), nil
 	}
 	return nil, errors.New("illegal DC comp type! only etcd or redis ... ")
 }

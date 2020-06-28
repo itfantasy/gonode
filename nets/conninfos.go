@@ -54,7 +54,7 @@ func AddConnInfo(id string, proto string, conn net.Conn, netWorker INetWorker) e
 	connInfos.vk[conn] = id
 
 	if proto == KCP || proto == TCP {
-		newConnState(id, conn)
+		newConnState(id, conn, netWorker)
 	}
 	return nil
 }

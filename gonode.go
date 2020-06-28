@@ -3,64 +3,63 @@ package gonode
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"strings"
 	"sync"
 
-	"github.com/itfantasy/gonode/behaviors/gen_monitor"
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/behaviors/logger"
+	"github.com/itfantasy/gonode/behaviors/monitor"
 	"github.com/itfantasy/gonode/behaviors/supervisor"
-
 	"github.com/itfantasy/gonode/core/datacenter"
-	"github.com/itfantasy/gonode/core/logger"
-	"github.com/itfantasy/gonode/core/sysmonitor"
-
 	"github.com/itfantasy/gonode/nets"
-	"github.com/itfantasy/gonode/nets/kcp"
-	"github.com/itfantasy/gonode/nets/tcp"
-	"github.com/itfantasy/gonode/nets/ws"
 )
 
 type GoNode struct {
-	info     *gen_server.NodeInfo
-	behavior gen_server.GenServer
-
-	logger *logger.Logger
-	dc     datacenter.IDataCenter
-
-	monitor    gen_monitor.GenMonitor
-	monitoring *sysmonitor.SysMonitoring
-
-	super supervisor.Supervisor
-
+	info       *gen_server.NodeInfo
+	behavior   gen_server.GenServer
+	logLevel   int
+	logWriter  logger.LogWriter
+	logger     *logger.Logger
+	monitor    monitor.GenMonitor
+	monitoring *monitor.SysMonitoring
+	super      supervisor.Supervisor
+	dc         datacenter.IDataCenter
 	netWorkers map[string]nets.INetWorker
-
-	event *EventHandler
-	lock  sync.RWMutex
+	event      *EventHandler
+	lock       sync.RWMutex
 }
 
 // -------------- init ----------------
 
 func (g *GoNode) Bind(behavior interface{}) error {
 	switch behavior.(type) {
-	case gen_server.GenServer:
-		g.behavior = behavior.(gen_server.GenServer)
-	case gen_monitor.GenMonitor:
-		g.monitor = behavior.(gen_monitor.GenMonitor)
 	case supervisor.Supervisor:
 		super := behavior.(supervisor.Supervisor)
 		superNode := supervisor.NewSuperNode()
-		err := superNode.BindAndInit(SUPERVISOR, super, ALLNODES, CHAN_LOG, CHAN_MONI)
+		err := superNode.InitSupervisor(super)
 		if err != nil {
 			return errors.New("Bind Supervisor Failed!!" + err.Error())
 		}
 		g.super = super
 		g.behavior = superNode
+	case gen_server.GenServer:
+		g.behavior = behavior.(gen_server.GenServer)
 	default:
 		return errors.New("illegal behavior type!!")
 	}
 	return nil
+}
+
+func (g *GoNode) BindMonitor(monitor monitor.GenMonitor) {
+	g.monitor = monitor
+}
+
+func (g *GoNode) BindLogger(logWriter logger.LogWriter, logLevel int) {
+	g.logWriter = logWriter
+	g.logLevel = logLevel
 }
 
 func (g *GoNode) Launch() {
@@ -83,21 +82,18 @@ func (g *GoNode) Launch() {
 	g.event = newEventHandler(g)
 
 	// init the logger
-	logger, warn := logger.NewLogger(g.info.Id, g.info.LogLevel, g.info.LogComp, CHAN_LOG)
-	if warn != nil {
-		fmt.Println("Warning!! Can not create the Component for Logger, we will use the default Console Logger!" + warn.Error())
-	}
+	logger := logger.NewLogger(g.info.NodeId, g.logLevel, g.logWriter)
 	g.logger = logger
 
 	// init the dc
-	dc, err := datacenter.NewDataCenter(g.info.RegComp)
+	dc, err := datacenter.NewDataCenter(g.info.RegDC)
 	if err != nil {
 		fmt.Println("Initialize Faild!! Init the DataCenter failed!!" + err.Error())
 		return
 	}
 	g.dc = dc
 	g.dc.BindCallbacks(g.event)
-	err2 := g.dc.RegisterAndDetect(g.info, CHAN_REG, 5000)
+	err2 := g.dc.RegisterAndDetect(g.info, g.info.NameSpace, 5000)
 	if err2 != nil {
 		fmt.Println("Initialize Faild!! Register to the DataCenter failed!!" + err2.Error())
 		return
@@ -105,7 +101,7 @@ func (g *GoNode) Launch() {
 
 	// init the monitor
 	if g.monitor != nil {
-		monitoring, err := sysmonitor.NewSysMonitoring(g.info.Id, g.monitor, CHAN_MONI)
+		monitoring, err := monitor.NewSysMonitoring(g.info.NodeId, g.monitor)
 		if err != nil {
 			fmt.Println("Initialize Faild!! You have binded a event behavior, but the eventconf is incorrect!!" + err.Error())
 			return
@@ -114,12 +110,17 @@ func (g *GoNode) Launch() {
 		g.monitoring.StartMonitoring()
 	}
 
-	theUrl, err := g.getListenUrl(g.info.Url)
-	if err != nil {
-		fmt.Println("Initialize Faild!! Can not parse the url!!")
-		g.logger.Error(err.Error())
+	if len(g.info.EndPoints) > 0 {
+		for _, endPoint := range g.info.EndPoints {
+			theUrl, err := g.getListenUrl(endPoint)
+			if err != nil {
+				fmt.Println("Initialize Faild!! Can not parse the url!!")
+				g.logger.Error(err.Error())
+			} else {
+				g.Listen(theUrl)
+			}
+		}
 	}
-	g.Listen(theUrl)
 
 	fmt.Println(` ------- itfantasy.github.io -------
    ______      _   __          __   
@@ -132,7 +133,7 @@ func (g *GoNode) Launch() {
 
 	fmt.Println(g.info.ToString())
 	g.behavior.Start()
-	g.logger.Info("The node has been Launched!" + g.info.Id)
+	g.logger.Info("The node has been Launched!" + g.info.NodeId)
 	select {}
 	g.logger.Error("shuting down!!!")
 }
@@ -144,11 +145,11 @@ func (g *GoNode) Info() *gen_server.NodeInfo {
 }
 
 func (g *GoNode) Self() string {
-	return g.info.Id
+	return g.info.NodeId
 }
 
 func (g *GoNode) Origin() string {
-	return nets.CombineOriginInfo(g.info.Id, g.info.Url, g.info.Sig)
+	return nets.CombineOriginInfo(g.info.NodeId, g.info.EndPoints[0], g.info.Sig)
 }
 
 func (g *GoNode) Logger() *logger.Logger {
@@ -167,10 +168,11 @@ func (g *GoNode) getListenUrl(url string) (string, error) {
 	if len(ipAndPort) != 2 {
 		return "", errors.New("illegal url!" + url)
 	}
-	if !g.info.Pub {
-		return g.info.Url, nil
+	gridEvn := os.Getenv("GRID_NODE_ID")
+	if gridEvn != "" && g.info.IsPub {
+		return proto + "://" + "0.0.0.0" + ":" + ipAndPort[1], nil
 	}
-	return proto + "://" + "0.0.0.0" + ":" + ipAndPort[1], nil
+	return url, nil
 }
 
 func (g *GoNode) netWorker(url string) nets.INetWorker {
@@ -182,11 +184,11 @@ func (g *GoNode) netWorker(url string) nets.INetWorker {
 		proto := strings.Split(url, "://")[0] // get the header of protocol
 		switch proto {
 		case (string)(nets.WS):
-			g.netWorkers[url] = ws.NewWSNetWorker()
+			g.netWorkers[url] = nets.NewWSNetWorker()
 		case (string)(nets.KCP):
-			g.netWorkers[url] = kcp.NewKcpNetWorker()
+			g.netWorkers[url] = nets.NewKcpNetWorker()
 		case (string)(nets.TCP):
-			g.netWorkers[url] = tcp.NewTcpNetWorker()
+			g.netWorkers[url] = nets.NewTcpNetWorker()
 		}
 		g.netWorkers[url].BindEventListener(g.event)
 	}
@@ -195,21 +197,23 @@ func (g *GoNode) netWorker(url string) nets.INetWorker {
 
 func (g *GoNode) Listen(url string) {
 	go func() {
-		err := g.netWorker(url).Listen(url)
-		if err != nil {
+		g.lock.Lock()
+		netWorker := g.netWorker(url)
+		g.lock.Unlock()
+		if err := netWorker.Listen(url); err != nil {
 			g.logger.Error(err.Error())
-			g.onError(g.info.Id, err)
+			g.onError(g.info.NodeId, err)
 		}
 	}()
 }
 
-func (g *GoNode) Connnect(nickid string, url string) error {
-	exist := nets.NodeConned(nickid)
+func (g *GoNode) Connnect(nodeId string, url string) error {
+	exist := nets.NodeConned(nodeId)
 	if exist {
-		g.logger.Info("The nickid has been existed!" + url + "#" + nickid)
+		g.logger.Info("The nickid has been existed!" + url + "#" + nodeId)
 		return nil
 	}
-	return g.netWorker(url).Connect(nickid, url, g.Origin())
+	return g.netWorker(url).Connect(nodeId, url, g.Origin())
 }
 
 func (g *GoNode) Send(id string, msg []byte) error {
@@ -238,7 +242,7 @@ func (g *GoNode) Close(id string) error {
 }
 
 func (g *GoNode) checkTargetId(id string) bool {
-	if g.info.BackEnds == ALLNODES && id != g.info.Id {
+	if g.info.BackEnds == ALLNODES && id != g.info.NodeId {
 		return true
 	}
 
@@ -259,7 +263,7 @@ func (g *GoNode) reportError(err interface{}) {
 	content := fmt.Sprint(err) +
 		"\r=============== - CallStackInfo - =============== \r" + string(debug.Stack())
 	if g.monitor != nil {
-		g.monitor.OnReportError(g.info.Id, title, content)
+		g.monitor.OnReportError(g.info.NodeId, title, content)
 	}
 	g.logger.Error(title + content)
 }

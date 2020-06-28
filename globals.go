@@ -2,8 +2,9 @@ package gonode
 
 import (
 	"github.com/itfantasy/gonode/behaviors/gen_server"
+	"github.com/itfantasy/gonode/behaviors/logger"
+	"github.com/itfantasy/gonode/behaviors/monitor"
 	"github.com/itfantasy/gonode/core/errs"
-	"github.com/itfantasy/gonode/core/logger"
 	"github.com/itfantasy/gonode/nets"
 )
 
@@ -28,6 +29,9 @@ func Self() string {
 
 func Bind(behavior interface{}) error {
 	return node.Bind(behavior)
+}
+func BindMonitor(monitor monitor.GenMonitor) {
+	node.BindMonitor(monitor)
 }
 func Listen(url string) {
 	node.Listen(url)

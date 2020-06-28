@@ -4,19 +4,19 @@ import (
 	"strings"
 
 	"github.com/itfantasy/gonode/behaviors/gen_server"
-	"github.com/itfantasy/gonode/components/etcd"
+	"github.com/itfantasy/gonode/components"
 	"github.com/itfantasy/gonode/utils/json"
 	"github.com/itfantasy/gonode/utils/timer"
 )
 
 type EtcdDC struct {
-	coreEtcd  *etcd.Etcd
+	coreEtcd  *components.Etcd
 	callbacks IDCCallbacks
 	info      *gen_server.NodeInfo
 	channel   string
 }
 
-func NewEtcdDC(et *etcd.Etcd) *EtcdDC {
+func NewEtcdDC(et *components.Etcd) *EtcdDC {
 	e := new(EtcdDC)
 	e.coreEtcd = et
 	return e
@@ -40,9 +40,10 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 		return err
 	}
 
-	err2 := e.coreEtcd.Set(channel+"/"+e.info.Id, infoStr)
-	if err2 != nil {
-		return err2
+	if len(e.info.EndPoints) > 0 {
+		if err := e.coreEtcd.Set(channel+"/"+e.info.NodeId, infoStr); err != nil {
+			return err
+		}
 	}
 
 	// and auto detect per msfrequency
@@ -58,9 +59,9 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 				}
 				for idstr, _ := range ids {
 					id := strings.TrimPrefix(idstr, channel+"/")
-					if id != e.info.Id {
+					if id != e.info.NodeId {
 						connErr := e.callbacks.OnNewNode(id)
-						if e.info.Id == "supervisor" {
+						if e.info.NodeId == "supervisor" {
 							if connErr != nil {
 								if checkOutOfDate(id) {
 									if _, err := e.coreEtcd.Delete(idstr); err != nil {
@@ -79,7 +80,7 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 					}
 				}
 			}
-			if e.info.Id != "supervisor" {
+			if e.info.NodeId != "supervisor" {
 				e.updateNodeStatus()
 			}
 		}
@@ -88,7 +89,7 @@ func (e *EtcdDC) RegisterAndDetect(info *gen_server.NodeInfo, channel string, ms
 	return nil
 }
 func (e *EtcdDC) GetNodeInfo(id string) (*gen_server.NodeInfo, error) {
-	if e.info.Id == id {
+	if e.info.NodeId == id {
 		return e.info, nil
 	}
 	infoStr, err := e.coreEtcd.Get(e.channel + "/" + id)
@@ -127,7 +128,7 @@ func (e *EtcdDC) updateNodeStatus() error {
 	if err != nil {
 		return err
 	}
-	err2 := e.coreEtcd.Set("--status/"+e.channel+"/"+e.info.Id, status)
+	err2 := e.coreEtcd.Set("--status/"+e.channel+"/"+e.info.NodeId, status)
 	if err2 != nil {
 		return err2
 	}
