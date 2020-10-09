@@ -4,6 +4,7 @@ import (
 	"github.com/itfantasy/gonode/behaviors/gen_server"
 	"github.com/itfantasy/gonode/behaviors/logger"
 	"github.com/itfantasy/gonode/behaviors/monitor"
+	"github.com/itfantasy/gonode/behaviors/supervisor"
 	"github.com/itfantasy/gonode/core/errs"
 	"github.com/itfantasy/gonode/nets"
 )
@@ -27,11 +28,17 @@ func Self() string {
 	return node.Self()
 }
 
-func Bind(behavior interface{}) error {
-	return node.Bind(behavior)
+func Bind(behavior gen_server.GenServer) {
+	node.Bind(behavior)
 }
 func BindMonitor(monitor monitor.GenMonitor) {
 	node.BindMonitor(monitor)
+}
+func BindLogger(logWriter logger.LogWriter, logLevel int) {
+	node.BindLogger(logWriter, logLevel)
+}
+func Supervise(super supervisor.Supervisor) error {
+	return node.Supervise(super)
 }
 func Listen(url string) {
 	node.Listen(url)

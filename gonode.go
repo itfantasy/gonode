@@ -34,23 +34,8 @@ type GoNode struct {
 
 // -------------- init ----------------
 
-func (g *GoNode) Bind(behavior interface{}) error {
-	switch behavior.(type) {
-	case supervisor.Supervisor:
-		super := behavior.(supervisor.Supervisor)
-		superNode := supervisor.NewSuperNode()
-		err := superNode.InitSupervisor(super)
-		if err != nil {
-			return errors.New("Bind Supervisor Failed!!" + err.Error())
-		}
-		g.super = super
-		g.behavior = superNode
-	case gen_server.GenServer:
-		g.behavior = behavior.(gen_server.GenServer)
-	default:
-		return errors.New("illegal behavior type!!")
-	}
-	return nil
+func (g *GoNode) Bind(behavior gen_server.GenServer) {
+	g.behavior = behavior
 }
 
 func (g *GoNode) BindMonitor(monitor monitor.GenMonitor) {
@@ -60,6 +45,20 @@ func (g *GoNode) BindMonitor(monitor monitor.GenMonitor) {
 func (g *GoNode) BindLogger(logWriter logger.LogWriter, logLevel int) {
 	g.logWriter = logWriter
 	g.logLevel = logLevel
+}
+
+func (g *GoNode) Supervise(super supervisor.Supervisor) error {
+	if g.behavior != nil {
+		return errors.New("Bind Supervisor Failed!! This node has been binded by gen_server or supervisor")
+	}
+	superNode := supervisor.NewSuperNode()
+	err := superNode.InitSupervisor(super)
+	if err != nil {
+		return errors.New("Bind Supervisor Failed!!" + err.Error())
+	}
+	g.super = super
+	g.behavior = superNode
+	return nil
 }
 
 func (g *GoNode) Launch() {
